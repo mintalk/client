@@ -4,17 +4,12 @@ import (
 	gc "github.com/rthornton128/goncurses"
 )
 
-type State uint
-
-const (
-	STATE_NORMAL State = iota
-	STATE_INSERT
-)
-
 type Window struct {
 	*gc.Window
-	panels []*Tab
-	State  State
+	layout   *Layout
+	channel  *ChannelPanel
+	channels *ChannelsPanel
+	State    *UIState
 }
 
 func NewWindow() (*Window, error) {
@@ -22,19 +17,33 @@ func NewWindow() (*Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	window := &Window{ncursesWindow, []*Tab{}, STATE_NORMAL}
+	window := &Window{ncursesWindow, nil, nil, nil, NewUIState()}
 	return window, nil
 }
 
-func (window *Window) Create() {
+func (window *Window) Create() error {
 	window.Keypad(true)
 
-	window.panels = []*Tab{
-		MakeTab(0.3, 1),
-		MakeTab(1, 1),
+	var err error
+	window.channel, err = NewChannelPanel()
+	if err != nil {
+		return err
+	}
+	window.channels, err = NewChannelsPanel()
+	if err != nil {
+		return err
+	}
+
+	window.layout = &Layout{
+		Panel: window.channels.Panel,
+		Child: &Layout{
+			Panel: window.channel.Panel,
+		},
+		Direction: Horizontal,
 	}
 
 	window.Resize(window.MaxYX())
+	return nil
 }
 
 func (window *Window) Close() {
@@ -43,41 +52,31 @@ func (window *Window) Close() {
 
 func (window *Window) Run() {
 	for {
-		window.panels[0].WriteText(map[State]string{STATE_NORMAL: "normal", STATE_INSERT: "insert"}[window.State])
 		window.Draw()
-		gc.Echo(window.State == STATE_INSERT)
+		gc.Echo(window.State.Mode == ModeInsert)
 		switch window.GetChar() {
 		case 'q':
-			if window.State == STATE_NORMAL {
+			if window.State.Mode == ModeNormal {
 				return
 			}
 		case '\n':
-			window.State = STATE_INSERT
+			window.State.Mode = ModeInsert
 		case gc.KEY_ESC:
-			window.State = STATE_NORMAL
+			window.State.Mode = ModeNormal
 		}
 	}
 }
 
-func (window *Window) Resize(th int, tw int) {
-	lastx := 0
-	for i := 0; i < len(window.panels); i++ {
-		tab := window.panels[i]
-		w := int(float64(tw) * tab.widthPercent)
-		h := int(float64(th) * tab.heightPercent)
-
-		tab.Window().Resize(h, w)
-		tab.Window().MoveWindow(0, lastx)
-		tab.WriteText("Test")
-		window.panels[i].Window().Box(0, 0)
-
-		tw -= w
-		lastx = w
-	}
+func (window *Window) Resize(height, width int) {
+	window.layout.Update(width, height, 0, 0)
 	window.Draw()
 }
 
 func (window *Window) Draw() {
+	window.channel.Window().Move(1, 1)
+	window.channel.Window().Print("Channel")
+	window.channels.Window().Move(1, 1)
+	window.channels.Window().Print("Channels")
 	gc.UpdatePanels()
 	gc.Update()
 }
