@@ -1,7 +1,8 @@
 package main
 
-import "fmt"
+import "mintalk/client/app"
 
 func main() {
-	fmt.Println("Hello, World!")
+	app := app.NewApp()
+	app.Run()
 }

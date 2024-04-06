@@ -18,4 +18,7 @@ func main() {
 		return
 	}
 	database.Setup()
+
+	app := app.NewApp(config)
+	app.Run()
 }
