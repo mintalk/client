@@ -5,6 +5,6 @@ type ChannelPanel struct {
 }
 
 func NewChannelPanel() (*ChannelPanel, error) {
-	panel, err := NewPanel(3, 1)
+	panel, err := NewPanel(3, 1, "ChannelPanel")
 	return &ChannelPanel{panel}, err
 }

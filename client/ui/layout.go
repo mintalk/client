@@ -50,7 +50,7 @@ func (layout *Layout) Update(maxWidth, maxHeight, offsetX, offsetY int) {
 	panelHeight := heightFraction * availableHeight
 
 	layout.Panel.Window().Resize(int(panelHeight), int(panelWidth))
-	layout.Panel.Window().MoveWindow(offsetY, offsetX)
+	layout.Panel.Move(offsetY, offsetX)
 	layout.Panel.Window().Box(0, 0)
 
 	if layout.Child != nil {
