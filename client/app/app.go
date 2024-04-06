@@ -2,6 +2,7 @@ package app
 
 import (
 	"log/slog"
+	"mintalk/client/cli"
 	"mintalk/client/secure"
 	"net"
 )
@@ -14,6 +15,8 @@ func NewApp() *App {
 }
 
 func (app *App) Run() {
+	cliInstance := cli.InitCli()
+	defer cliInstance.Close()
 	conn, err := net.Dial("tcp", "localhost:8000")
 	if err != nil {
 		slog.Error("could not connect to server", err)
@@ -27,4 +30,5 @@ func (app *App) Run() {
 	if err != nil {
 		slog.Error("could not send message", err)
 	}
+	cliInstance.Run()
 }

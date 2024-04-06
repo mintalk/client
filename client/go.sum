@@ -1,0 +1,10 @@
+github.com/gbin/goncurses v0.0.0-20240205203827-f1026e55db44 h1:jM4j3iMcxAgWiBS+nDFI5XhYJza9NwlLETiplfRfpsI=
+github.com/gbin/goncurses v0.0.0-20240205203827-f1026e55db44/go.mod h1:dmRjyC3ZOQQ4EXWMOIAQi0TLaJPcg61LFsJ9mvhSGRE=
+github.com/rthornton128/goncurses v0.0.0-20231014161942-82671379df88 h1:bNvZ7P4l4rvg1O3qNDRJ4FNgKASMoG+V7OIpu4SIkgA=
+github.com/rthornton128/goncurses v0.0.0-20231014161942-82671379df88/go.mod h1:AHlKFomPTwmO7H2vL8d7VNrQNQmhMi/DBhDnHRhjbCo=
+github.com/sriram-srinivasan/gore v0.0.0-20140117035120-0a13855786cf h1:RzZTZVt8vtnAruBu42ROZXJo81YNs2PPdDNyvEk92b0=
+github.com/sriram-srinivasan/gore v0.0.0-20140117035120-0a13855786cf/go.mod h1:S8qbiNemv1gZsZSoD0BiN4e2vFcxIY2ieOhYsisbL7k=
+golang.org/x/sys v0.19.0 h1:q5f1RH2jigJ1MoAWp2KTp3gm5zAGFUTarQZ5U386+4o=
+golang.org/x/sys v0.19.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
+golang.org/x/term v0.19.0 h1:+ThwsDv+tYfnJFhF4L8jITxu1tdTWRTZpdsWgEgjL6Q=
+golang.org/x/term v0.19.0/go.mod h1:2CuTdWZ7KHSQwUzKva0cbMg6q2DMI3Mmxp+gKJbskEk=
