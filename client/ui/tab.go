@@ -1,17 +1,17 @@
-package cli
+package ui
 
 import gc "github.com/rthornton128/goncurses"
 
 type Tab struct {
 	*gc.Panel
 
-	widthPercent  float32
-	heightPercent float32
+	widthPercent  float64
+	heightPercent float64
 
 	active bool
 }
 
-func MakeTab(widthPercent float32, heightPercent float32) *Tab {
+func MakeTab(widthPercent, heightPercent float64) *Tab {
 	window, _ := gc.NewWindow(0, 0, 0, 0)
 	window.Box(0, 0)
 	panel := gc.NewPanel(window)
@@ -21,10 +21,6 @@ func MakeTab(widthPercent float32, heightPercent float32) *Tab {
 		heightPercent,
 		false,
 	}
-}
-
-func (tab *Tab) Resize(th int, tw int) {
-
 }
 
 func (tab *Tab) WriteText(text string) {

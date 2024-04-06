@@ -2,9 +2,7 @@ package app
 
 import (
 	"log/slog"
-	"mintalk/client/cli"
-	"mintalk/client/secure"
-	"net"
+	"mintalk/client/ui"
 )
 
 type App struct {
@@ -15,20 +13,11 @@ func NewApp() *App {
 }
 
 func (app *App) Run() {
-	cliInstance := cli.InitCli()
-	defer cliInstance.Close()
-	conn, err := net.Dial("tcp", "localhost:8000")
+	window, err := ui.NewWindow()
 	if err != nil {
-		slog.Error("could not connect to server", err)
+		slog.Error("could not create window", err)
 	}
-	defer conn.Close()
-	prime, err := secure.RandomPrime(1024)
-	if err != nil {
-		slog.Error("could not generate prime", err)
-	}
-	err = secure.Send3Pass(conn, []byte("hello"), prime)
-	if err != nil {
-		slog.Error("could not send message", err)
-	}
-	cliInstance.Run()
+	window.Create()
+	defer window.Close()
+	window.Run()
 }
