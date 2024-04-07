@@ -1,14 +1,14 @@
-package ui
+package panels
 
 import gc "github.com/rthornton128/goncurses"
 
 type Panel struct {
 	*gc.Panel
 
-	name string
+	Name string
 
-	width  int
-	height int
+	Width  int
+	Height int
 }
 
 func NewPanel(width, height int, name string) (*Panel, error) {
@@ -44,27 +44,6 @@ func (panel *Panel) Draw(active bool) error {
 	return nil
 }
 
-type Tree struct {
-	Item     string
-	Children []Tree
-}
-
-func (panel *Panel) ShowTree(tree Tree, y, xoffset int) {
-	panel.showTreeRec(tree, y, xoffset)
-}
-
-func (panel *Panel) showTreeRec(tree Tree, y, xoffset int) int {
-	panel.Window().Move(y, 1)
-	panel.Window().Print("|")
-	panel.Window().Move(y, xoffset)
-	panel.Window().Print("|-" + tree.Item)
-	c := 0
-	for i := 0; i < len(tree.Children); i++ {
-		c += panel.showTreeRec(tree.Children[i], y+1+c, xoffset+2)
-	}
-	return c
-}
-
 func (panel *Panel) ShowList(list []string) {
 	for i := 0; i < len(list); i++ {
 		panel.Window().Move(i+1, 1)
@@ -74,5 +53,5 @@ func (panel *Panel) ShowList(list []string) {
 
 func (panel *Panel) ShowName() {
 	panel.Window().Move(1, 1)
-	panel.Window().Print(panel.name)
+	panel.Window().Print(panel.Name)
 }

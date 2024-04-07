@@ -1,14 +1,16 @@
 package ui
 
 import (
+	"mintalk/client/ui/panels"
+
 	gc "github.com/rthornton128/goncurses"
 )
 
 type Window struct {
 	*gc.Window
 	layout   *Layout
-	channel  *ChannelPanel
-	channels *ChannelsPanel
+	channel  *panels.ChannelPanel
+	channels *panels.ChannelsPanel
 	State    *UIState
 }
 
@@ -33,11 +35,11 @@ func (window *Window) Create() error {
 	window.Keypad(true)
 
 	var err error
-	window.channel, err = NewChannelPanel()
+	window.channel, err = panels.NewChannelPanel()
 	if err != nil {
 		return err
 	}
-	window.channels, err = NewChannelsPanel()
+	window.channels, err = panels.NewChannelsPanel()
 	if err != nil {
 		return err
 	}
@@ -90,14 +92,23 @@ func (window *Window) Draw() error {
 	if err := window.channel.Draw(window.State.ActiveTab == TabChannel); err != nil {
 		return err
 	}
-	window.channel.ShowTree(Tree{
+	tree := Tree{
 		Item: "Folder1",
 		Children: []Tree{
 			{
 				Item: "Folder 2",
 				Children: []Tree{
 					{
-						Item:     "File 1",
+						Item: "File 1",
+						Children: []Tree{
+							{
+								Item:     "File 3",
+								Children: make([]Tree, 0),
+							},
+						},
+					},
+					{
+						Item:     "File 3",
 						Children: make([]Tree, 0),
 					},
 				},
@@ -107,22 +118,18 @@ func (window *Window) Draw() error {
 				Children: make([]Tree, 0),
 			},
 		},
-	}, 1, 1)
+	}
+	tree.Draw(window.channel.Panel, 2, 1, 1)
 	if err := window.channels.Draw(window.State.ActiveTab == TabChannels); err != nil {
 		return err
 	}
 	window.channels.ShowList([]string{
-		"Ich",
-		"bin",
+		"Aino",
+		"ist",
 		"besser",
-		"als",
-		"du",
 		"---",
-		"Nervermind",
-		"Tree ->",
+		"Tree",
 		"funktioniert",
-		"noch",
-		"nicht",
 	})
 	gc.UpdatePanels()
 	return gc.Update()

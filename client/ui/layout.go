@@ -1,5 +1,7 @@
 package ui
 
+import "mintalk/client/ui/panels"
+
 type Direction uint
 
 const (
@@ -8,13 +10,13 @@ const (
 )
 
 type Layout struct {
-	Panel     *Panel
+	Panel     *panels.Panel
 	Child     *Layout
 	Direction Direction
 }
 
 func (layout *Layout) GetWidth() (width int) {
-	width += layout.Panel.width
+	width += layout.Panel.Width
 	if layout.Child != nil && layout.Direction == Horizontal {
 		width += layout.Child.GetWidth()
 	}
@@ -22,7 +24,7 @@ func (layout *Layout) GetWidth() (width int) {
 }
 
 func (layout *Layout) GetHeight() (height int) {
-	height += layout.Panel.width
+	height += layout.Panel.Width
 	if layout.Child != nil && layout.Direction == Vertical {
 		height += layout.Child.GetHeight()
 	}
@@ -30,8 +32,8 @@ func (layout *Layout) GetHeight() (height int) {
 }
 
 func (layout *Layout) Update(maxWidth, maxHeight, offsetX, offsetY int) {
-	widthSum := layout.Panel.width
-	heightSum := layout.Panel.height
+	widthSum := layout.Panel.Width
+	heightSum := layout.Panel.Height
 	if layout.Child != nil {
 		if layout.Direction == Horizontal {
 			widthSum += layout.Child.GetWidth()
@@ -43,8 +45,8 @@ func (layout *Layout) Update(maxWidth, maxHeight, offsetX, offsetY int) {
 	availableWidth := float64(maxWidth - offsetX)
 	availableHeight := float64(maxHeight - offsetY)
 
-	widthFraction := float64(layout.Panel.width) / float64(widthSum)
-	heightFraction := float64(layout.Panel.height) / float64(heightSum)
+	widthFraction := float64(layout.Panel.Width) / float64(widthSum)
+	heightFraction := float64(layout.Panel.Height) / float64(heightSum)
 
 	panelWidth := widthFraction * availableWidth
 	panelHeight := heightFraction * availableHeight

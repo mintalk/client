@@ -1,4 +1,4 @@
-package ui
+package panels
 
 type ChannelPanel struct {
 	*Panel
