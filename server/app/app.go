@@ -29,7 +29,7 @@ func (app *App) Init() error {
 	if err != nil {
 		return err
 	}
-	app.sessionManager = network.NewSessionManager(time.Duration(app.config.SessionLifetime)*time.Minute, 1024)
+	app.sessionManager = network.NewSessionManager(time.Duration(app.config.SessionLifetime)*time.Minute, 32)
 	return nil
 }
 

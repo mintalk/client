@@ -26,31 +26,25 @@ func NewSessionManager(lifetime time.Duration, tokenLength int) *SessionManager 
 	}
 }
 
-func randSessionToken(length int) (string, error) {
-	numBytes := length / 4 * 3
-	if length%4 != 0 {
-		numBytes = (length/4 + 1) * 3
-	}
-
-	bytes := make([]byte, numBytes)
+func randSessionToken() (string, error) {
+	bytes := make([]byte, 32)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		return "", err
 	}
 
 	token := base64.URLEncoding.EncodeToString(bytes)
-	token = token[:length]
 
 	return token, nil
 }
 
 func (manager *SessionManager) NewSession(user *db.User) (string, error) {
-	sid, err := randSessionToken(manager.TokenLength)
+	sid, err := randSessionToken()
 	if err != nil {
 		return "", err
 	}
 	for _, ok := manager.Sessions[sid]; ok; {
-		sid, err = randSessionToken(manager.TokenLength)
+		sid, err = randSessionToken()
 		if err != nil {
 			return "", err
 		}

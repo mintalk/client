@@ -74,13 +74,13 @@ func RandomPrime(n int) (*big.Int, error) {
 	return prime, nil
 }
 
-func Encrypt(message *big.Int, key Key) *big.Int {
+func ShamirEncrypt(message *big.Int, key Key) *big.Int {
 	result := &big.Int{}
 	result.Exp(message, key.Encryption, key.Prime)
 	return result
 }
 
-func Decrypt(ciphertext *big.Int, key Key) *big.Int {
+func ShamirDecrypt(ciphertext *big.Int, key Key) *big.Int {
 	result := &big.Int{}
 	result.Exp(ciphertext, key.Decryption, key.Prime)
 	return result

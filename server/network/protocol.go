@@ -1,6 +1,7 @@
 package network
 
 import (
+	"log/slog"
 	"mintalk/server/db"
 	"mintalk/server/secure"
 	"net"
@@ -10,6 +11,7 @@ type ProtocolExecutor struct {
 	Database       *db.Connection
 	Conn           net.Conn
 	SessionManager *SessionManager
+	Session        string
 }
 
 func (executor *ProtocolExecutor) Run() error {
@@ -18,7 +20,7 @@ func (executor *ProtocolExecutor) Run() error {
 }
 
 func (executor *ProtocolExecutor) Auth() (bool, error) {
-	data, err := secure.Recieve3Pass(executor.Conn)
+	data, err := secure.Receive3Pass(executor.Conn)
 	if err != nil {
 		return false, err
 	}
@@ -46,6 +48,7 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 			return false, err
 		}
 		response["session"] = session
+		executor.Session = session
 	}
 	prime, err := secure.RandomPrime(1024)
 	if err != nil {
@@ -55,4 +58,35 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 		return false, err
 	}
 	return authed, nil
+}
+
+func (executor *ProtocolExecutor) Receive(received chan NetworkData) {
+	for {
+		rawData, err := secure.ReceiveAES(executor.Conn, executor.Session)
+		if err != nil {
+			slog.Error("failed to receive data", err)
+			continue
+		}
+		data, err := Decode(rawData)
+		if err != nil {
+			slog.Error("failed to decode received data", err)
+			continue
+		}
+		received <- data
+	}
+}
+
+func (executor *ProtocolExecutor) Send(data chan NetworkData) {
+	for {
+		sendData := <-data
+		rawData, err := Encode(sendData)
+		if err != nil {
+			slog.Error("failed to encode data", err)
+			continue
+		}
+		if err := secure.SendAES(executor.Conn, rawData, executor.Session); err != nil {
+			slog.Error("failed to send data", err)
+			continue
+		}
+	}
 }

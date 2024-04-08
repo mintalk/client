@@ -1,11 +1,12 @@
 package secure
 
 import (
+	"encoding/base64"
 	"math/big"
 	"net"
 )
 
-func Recieve3Pass(conn net.Conn) ([]byte, error) {
+func Receive3Pass(conn net.Conn) ([]byte, error) {
 	buffer := make([]byte, 1024)
 	n, err := conn.Read(buffer)
 	if err != nil {
@@ -22,7 +23,7 @@ func Recieve3Pass(conn net.Conn) ([]byte, error) {
 		return nil, err
 	}
 
-	ciphertext := Encrypt(new(big.Int).SetBytes(buffer[:n]), key)
+	ciphertext := ShamirEncrypt(new(big.Int).SetBytes(buffer[:n]), key)
 
 	_, err = conn.Write(ciphertext.Bytes())
 	if err != nil {
@@ -34,7 +35,7 @@ func Recieve3Pass(conn net.Conn) ([]byte, error) {
 		return nil, err
 	}
 
-	message := Decrypt(new(big.Int).SetBytes(buffer[:n]), key)
+	message := ShamirDecrypt(new(big.Int).SetBytes(buffer[:n]), key)
 	return message.Bytes(), nil
 }
 
@@ -48,7 +49,7 @@ func Send3Pass(conn net.Conn, message []byte, prime *big.Int) error {
 		return err
 	}
 
-	ciphertext := Encrypt(new(big.Int).SetBytes(message), key)
+	ciphertext := ShamirEncrypt(new(big.Int).SetBytes(message), key)
 	_, err = conn.Write(ciphertext.Bytes())
 	if err != nil {
 		return err
@@ -60,7 +61,33 @@ func Send3Pass(conn net.Conn, message []byte, prime *big.Int) error {
 		return err
 	}
 
-	message = Decrypt(new(big.Int).SetBytes(buffer[:n]), key).Bytes()
+	message = ShamirDecrypt(new(big.Int).SetBytes(buffer[:n]), key).Bytes()
 	_, err = conn.Write(message)
+	return err
+}
+
+func ReceiveAES(conn net.Conn, key string) ([]byte, error) {
+	keyData, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {
+		return nil, err
+	}
+	buffer := make([]byte, 1024)
+	n, err := conn.Read(buffer)
+	if err != nil {
+		return nil, err
+	}
+	return AESDecrypt(buffer[:n], keyData)
+}
+
+func SendAES(conn net.Conn, data []byte, key string) error {
+	keyData, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {
+		return err
+	}
+	ciphertext, err := AESEncrypt(data, keyData)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Write(ciphertext)
 	return err
 }
