@@ -1,4 +1,4 @@
-package ui
+package elements
 
 import (
 	"strconv"
@@ -8,15 +8,17 @@ import (
 )
 
 type Input struct {
-	Length  int
-	Cursor  int
-	Offset  int
-	Active  bool
-	message string
+	Length     int
+	Cursor     int
+	MarkCursor int
+	Offset     int
+	Active     bool
+	message    string
+	mark       bool
 }
 
 func NewInput(length int) *Input {
-	return &Input{length, 0, 0, false, ""}
+	return &Input{length, 0, 0, 0, false, "", false}
 }
 
 func (input *Input) Update(key gc.Key) {
@@ -53,6 +55,7 @@ func (input *Input) Update(key gc.Key) {
 		input.message = newMessage
 		input.moveRight()
 	}
+	input.mark = false
 }
 
 func (input *Input) moveLeft(scroll bool) {

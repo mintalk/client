@@ -22,7 +22,7 @@ func NewConnector(host string) (*Connector, error) {
 	return connector, nil
 }
 
-func (connector *Connector) Receive(received chan NetworkData) {
+func (connector *Connector) Receive(received chan<- NetworkData) {
 	for {
 		rawData, err := secure.ReceiveAES(connector.conn, connector.session)
 		if err != nil {
@@ -38,7 +38,7 @@ func (connector *Connector) Receive(received chan NetworkData) {
 	}
 }
 
-func (connector *Connector) Send(data chan NetworkData) {
+func (connector *Connector) Send(data <-chan NetworkData) {
 	for {
 		sendData := <-data
 		rawData, err := Encode(sendData)

@@ -2,7 +2,11 @@ package ui
 
 import (
 	"log/slog"
+	"mintalk/client/ui/elements"
 	"mintalk/client/ui/panels"
+	"os"
+	"os/signal"
+	"syscall"
 
 	gc "github.com/rthornton128/goncurses"
 )
@@ -13,7 +17,7 @@ type Window struct {
 	channel  *panels.ChannelPanel
 	channels *panels.ChannelsPanel
 	State    *UIState
-	Input    *Input
+	Input    *elements.Input
 	running  bool
 }
 
@@ -41,6 +45,10 @@ func (window *Window) Create() error {
 	window.Timeout(0)
 	gc.Cursor(0)
 
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
+	go window.CloseListener(sigc)
+
 	var err error
 	window.channel, err = panels.NewChannelPanel()
 	if err != nil {
@@ -59,10 +67,21 @@ func (window *Window) Create() error {
 		Direction: Horizontal,
 	}
 
-	window.Input = NewInput(20)
+	window.Input = elements.NewInput(20)
 
 	window.Resize(window.MaxYX())
 	return nil
+}
+
+func (window *Window) CloseListener(sigc <-chan os.Signal) {
+	for {
+		select {
+		case <-sigc:
+			window.running = false
+			window.Close()
+			os.Exit(0)
+		}
+	}
 }
 
 func (window *Window) Close() {
@@ -89,11 +108,6 @@ func (window *Window) Update() {
 	}
 	window.Input.Update(char)
 	switch char {
-	case 'q':
-		if window.State.Mode == ModeNormal {
-			window.running = false
-			return
-		}
 	case '\n':
 		window.State.Mode = ModeInsert
 	case gc.KEY_TAB:

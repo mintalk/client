@@ -60,7 +60,7 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 	return authed, nil
 }
 
-func (executor *ProtocolExecutor) Receive(received chan NetworkData) {
+func (executor *ProtocolExecutor) Receive(received chan<- NetworkData) {
 	for {
 		rawData, err := secure.ReceiveAES(executor.Conn, executor.Session)
 		if err != nil {
@@ -76,7 +76,7 @@ func (executor *ProtocolExecutor) Receive(received chan NetworkData) {
 	}
 }
 
-func (executor *ProtocolExecutor) Send(data chan NetworkData) {
+func (executor *ProtocolExecutor) Send(data <-chan NetworkData) {
 	for {
 		sendData := <-data
 		rawData, err := Encode(sendData)
