@@ -2,16 +2,35 @@ package app
 
 import (
 	"log/slog"
-	"mintalk/server/secure"
+	"mintalk/server/config"
+	"mintalk/server/db"
+	"mintalk/server/network"
 	"net"
+	"time"
 )
 
 type App struct {
-	config *Config
+	config         *config.Config
+	database       *db.Connection
+	sessionManager *network.SessionManager
 }
 
-func NewApp(config *Config) *App {
+func NewApp(config *config.Config) *App {
 	return &App{config: config}
+}
+
+func (app *App) Init() error {
+	var err error
+	app.database, err = db.NewConnection(app.config)
+	if err != nil {
+		return err
+	}
+	err = app.database.Setup()
+	if err != nil {
+		return err
+	}
+	app.sessionManager = network.NewSessionManager(time.Duration(app.config.SessionLifetime)*time.Minute, 1024)
+	return nil
 }
 
 func (app *App) Run() {
@@ -34,12 +53,10 @@ func (app *App) Run() {
 
 func (app *App) handleClient(conn net.Conn) {
 	defer conn.Close()
-
-	message, err := secure.Recieve3Pass(conn)
+	executor := network.ProtocolExecutor{Conn: conn, Database: app.database, SessionManager: app.sessionManager}
+	err := executor.Run()
 	if err != nil {
-		slog.Warn("failed to receive message", err)
+		slog.Warn("connection failed", err)
 		return
 	}
-
-	slog.Info(string(message))
 }

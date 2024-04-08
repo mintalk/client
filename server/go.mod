@@ -3,6 +3,7 @@ module mintalk/server
 go 1.22.2
 
 require (
+	golang.org/x/crypto v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.5.6
 	gorm.io/gorm v1.25.9

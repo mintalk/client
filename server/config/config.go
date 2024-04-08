@@ -1,4 +1,4 @@
-package app
+package config
 
 import (
 	"os"
@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	Database string `yaml:"database"`
-	Host     string `yaml:"host"`
+	Database        string `yaml:"database"`
+	Host            string `yaml:"host"`
+	SessionLifetime int    `yaml:"session_lifetime"` // in minutes
 }
 
 func LoadConfig(path string) (*Config, error) {
