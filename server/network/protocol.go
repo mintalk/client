@@ -14,9 +14,8 @@ type ProtocolExecutor struct {
 	Session        string
 }
 
-func (executor *ProtocolExecutor) Run() error {
-	_, err := executor.Auth()
-	return err
+func NewProtocolExecutor(conn net.Conn, database *db.Connection, sessionManager *SessionManager) *ProtocolExecutor {
+	return &ProtocolExecutor{Conn: conn, Database: database, SessionManager: sessionManager}
 }
 
 func (executor *ProtocolExecutor) Auth() (bool, error) {
@@ -33,10 +32,6 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 		return false, err
 	}
 	response := NetworkData{"authed": authed}
-	data, err = Encode(response)
-	if err != nil {
-		return false, err
-	}
 	if authed {
 		var user *db.User
 		err := executor.Database.Where(&db.User{Name: request["username"].(string)}).First(&user).Error
@@ -49,6 +44,10 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 		}
 		response["session"] = session
 		executor.Session = session
+	}
+	data, err = Encode(response)
+	if err != nil {
+		return false, err
 	}
 	prime, err := secure.RandomPrime(1024)
 	if err != nil {
@@ -64,12 +63,12 @@ func (executor *ProtocolExecutor) Receive(received chan<- NetworkData) {
 	for {
 		rawData, err := secure.ReceiveAES(executor.Conn, executor.Session)
 		if err != nil {
-			slog.Error("failed to receive data", err)
+			slog.Error("failed to receive data", "err", err)
 			continue
 		}
 		data, err := Decode(rawData)
 		if err != nil {
-			slog.Error("failed to decode received data", err)
+			slog.Error("failed to decode received data", "err", err)
 			continue
 		}
 		received <- data
@@ -81,11 +80,11 @@ func (executor *ProtocolExecutor) Send(data <-chan NetworkData) {
 		sendData := <-data
 		rawData, err := Encode(sendData)
 		if err != nil {
-			slog.Error("failed to encode data", err)
+			slog.Error("failed to encode data", "err", err)
 			continue
 		}
 		if err := secure.SendAES(executor.Conn, rawData, executor.Session); err != nil {
-			slog.Error("failed to send data", err)
+			slog.Error("failed to send data", "err", err)
 			continue
 		}
 	}

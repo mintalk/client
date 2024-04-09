@@ -19,5 +19,5 @@ func NewConnection(conf *config.Config) (*Connection, error) {
 }
 
 func (connection *Connection) Setup() error {
-	return connection.AutoMigrate(&User{})
+	return connection.AutoMigrate(&User{}, &Message{})
 }

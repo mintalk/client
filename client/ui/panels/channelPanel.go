@@ -3,30 +3,32 @@ package panels
 import (
 	"fmt"
 	"mintalk/client/cache"
+	"mintalk/client/network"
 	"mintalk/client/ui/elements"
-	"time"
 
 	gc "github.com/rthornton128/goncurses"
 )
 
 type ChannelPanel struct {
 	*elements.Panel
-	input *elements.Input
-	list  *elements.List
-	cache *cache.ChannelCache
+	input     *elements.Input
+	list      *elements.List
+	cache     *cache.ChannelCache
+	Connector *network.Connector
 }
 
-func NewChannelPanel() (*ChannelPanel, error) {
+func NewChannelPanel(connector *network.Connector, channelCache *cache.ChannelCache) (*ChannelPanel, error) {
 	panel, err := elements.NewPanel(3, 1)
 	if err != nil {
 		return nil, err
 	}
-	channelPanel := &ChannelPanel{Panel: panel}
+	channelPanel := &ChannelPanel{Panel: panel, Connector: connector}
 	channelPanel.input = elements.NewInput(1, channelPanel.sendMessage)
 	channelPanel.Add(channelPanel.input)
 	channelPanel.list = elements.NewList(1, 1)
 	channelPanel.Add(channelPanel.list)
-	channelPanel.cache = cache.NewChannelCache()
+	channelPanel.cache = channelCache
+	channelPanel.cache.AddListener(channelPanel.updateListData)
 	return channelPanel, nil
 }
 
@@ -45,8 +47,7 @@ func (panel *ChannelPanel) Resize() {
 }
 
 func (panel *ChannelPanel) sendMessage(message string) {
-	panel.cache.AddMessage(cache.Message{Sender: "me", Contents: message, Time: time.Now()})
-	panel.updateListData()
+	panel.Connector.SendMessage(message)
 }
 
 func (panel *ChannelPanel) updateListData() {

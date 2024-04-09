@@ -1,6 +1,8 @@
 package network
 
-import "mintalk/client/secure"
+import (
+	"mintalk/client/secure"
+)
 
 func (connector *Connector) Auth(username, password string) error {
 	if err := connector.SendAuth(username, password); err != nil {

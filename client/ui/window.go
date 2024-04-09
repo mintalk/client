@@ -2,6 +2,8 @@ package ui
 
 import (
 	"log/slog"
+	"mintalk/client/cache"
+	"mintalk/client/network"
 	"mintalk/client/ui/panels"
 	"os"
 	"os/signal"
@@ -37,7 +39,7 @@ func NewWindow() (*Window, error) {
 	return window, nil
 }
 
-func (window *Window) Create() error {
+func (window *Window) Create(connector *network.Connector, channelCache *cache.ChannelCache) error {
 	window.Keypad(true)
 	gc.Echo(false)
 	gc.CBreak(true)
@@ -51,7 +53,7 @@ func (window *Window) Create() error {
 	go window.CloseListener(sigc)
 
 	var err error
-	window.channel, err = panels.NewChannelPanel()
+	window.channel, err = panels.NewChannelPanel(connector, channelCache)
 	if err != nil {
 		return err
 	}

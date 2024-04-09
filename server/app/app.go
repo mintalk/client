@@ -5,14 +5,12 @@ import (
 	"mintalk/server/config"
 	"mintalk/server/db"
 	"mintalk/server/network"
-	"net"
-	"time"
 )
 
 type App struct {
-	config         *config.Config
-	database       *db.Connection
-	sessionManager *network.SessionManager
+	config   *config.Config
+	database *db.Connection
+	server   *network.Server
 }
 
 func NewApp(config *config.Config) *App {
@@ -29,34 +27,14 @@ func (app *App) Init() error {
 	if err != nil {
 		return err
 	}
-	app.sessionManager = network.NewSessionManager(time.Duration(app.config.SessionLifetime)*time.Minute, 32)
+	app.server = network.NewServer(app.database, app.config)
 	return nil
 }
 
 func (app *App) Run() {
-	listener, err := net.Listen("tcp", app.config.Host)
+	err := app.server.Run()
 	if err != nil {
-		slog.Error("failed to create listener", err)
-		return
-	}
-	defer listener.Close()
-	slog.Info("listening on " + app.config.Host)
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			slog.Warn("failed to accept connection", err)
-			continue
-		}
-		go app.handleClient(conn)
-	}
-}
-
-func (app *App) handleClient(conn net.Conn) {
-	defer conn.Close()
-	executor := network.ProtocolExecutor{Conn: conn, Database: app.database, SessionManager: app.sessionManager}
-	err := executor.Run()
-	if err != nil {
-		slog.Warn("connection failed", err)
+		slog.Error("server failed", "err", err)
 		return
 	}
 }

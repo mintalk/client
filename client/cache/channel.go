@@ -2,11 +2,12 @@ package cache
 
 import (
 	"fmt"
+	"sort"
 	"time"
 )
 
 type Message struct {
-	Sender   string
+	Sender   uint
 	Contents string
 	Time     time.Time
 }
@@ -17,13 +18,36 @@ func (message Message) String() string {
 
 type ChannelCache struct {
 	lastUpdated time.Time
-	Messages    []Message
+	Messages    map[uint]Message
+	Listeners   []func()
 }
 
 func NewChannelCache() *ChannelCache {
-	return &ChannelCache{time.Now(), make([]Message, 0)}
+	return &ChannelCache{time.Now(), make(map[uint]Message, 0), make([]func(), 0)}
 }
 
-func (cache *ChannelCache) AddMessage(message Message) {
-	cache.Messages = append(cache.Messages, message)
+func (cache *ChannelCache) AddMessage(mid uint, message Message) {
+	cache.Messages[mid] = message
+	for _, listener := range cache.Listeners {
+		listener()
+	}
+}
+
+func (cache *ChannelCache) AddListener(listener func()) {
+	cache.Listeners = append(cache.Listeners, listener)
+}
+
+func (cache *ChannelCache) GetMessages() []Message {
+	mids := make([]uint, 0)
+	for mid := range cache.Messages {
+		mids = append(mids, mid)
+	}
+	sort.Slice(mids, func(i, j int) bool {
+		return cache.Messages[mids[i]].Time.Before(cache.Messages[mids[j]].Time)
+	})
+	messages := make([]Message, len(mids))
+	for idx, mid := range mids {
+		messages[idx] = cache.Messages[mid]
+	}
+	return messages
 }
