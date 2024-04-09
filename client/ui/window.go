@@ -2,7 +2,6 @@ package ui
 
 import (
 	"log/slog"
-	"mintalk/client/ui/elements"
 	"mintalk/client/ui/panels"
 	"os"
 	"os/signal"
@@ -17,7 +16,6 @@ type Window struct {
 	channel  *panels.ChannelPanel
 	channels *panels.ChannelsPanel
 	State    *UIState
-	Input    *elements.Input
 	running  bool
 }
 
@@ -34,7 +32,8 @@ func NewWindow() (*Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	window := &Window{ncursesWindow, nil, nil, nil, NewUIState(), nil, false}
+	window := &Window{ncursesWindow, nil, nil, nil, NewUIState(), false}
+	window.State.ActiveTab = TabChannel
 	return window, nil
 }
 
@@ -44,6 +43,8 @@ func (window *Window) Create() error {
 	gc.CBreak(true)
 	window.Timeout(0)
 	gc.Cursor(0)
+
+	InitColors()
 
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
@@ -66,8 +67,6 @@ func (window *Window) Create() error {
 		},
 		Direction: Horizontal,
 	}
-
-	window.Input = elements.NewInput(20)
 
 	window.Resize(window.MaxYX())
 	return nil
@@ -101,12 +100,12 @@ func (window *Window) Run() {
 }
 
 func (window *Window) Update() {
-	window.Input.Active = true
 	char := window.GetChar()
 	if char == 0 {
 		return
 	}
-	window.Input.Update(char)
+	window.channel.Update(char)
+	window.channels.Update(char)
 	switch char {
 	case '\n':
 		window.State.Mode = ModeInsert
@@ -122,10 +121,12 @@ func (window *Window) Update() {
 }
 
 func (window *Window) Draw() error {
-	if err := window.channel.Draw(window.State.ActiveTab == TabChannel); err != nil {
+	window.channel.Active = window.State.ActiveTab == TabChannel
+	if err := window.channel.Draw(window.Window); err != nil {
 		return err
 	}
-	if err := window.channels.Draw(window.State.ActiveTab == TabChannels); err != nil {
+	window.channels.Active = window.State.ActiveTab == TabChannels
+	if err := window.channels.Draw(window.Window); err != nil {
 		return err
 	}
 
@@ -135,11 +136,10 @@ func (window *Window) Draw() error {
 		return err
 	}
 
-	window.Input.Draw(window.channel.Window(), 1, 1)
-
 	return nil
 }
 
 func (window *Window) Resize(height, width int) {
 	window.layout.Update(width, height, 0, 0)
+	window.channel.Resize()
 }

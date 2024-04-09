@@ -1,8 +1,9 @@
 package ui
 
 import (
+	"mintalk/client/ui/elements"
+
 	gc "github.com/rthornton128/goncurses"
-	"mintalk/client/ui/panels"
 )
 
 type Tree struct {
@@ -10,11 +11,11 @@ type Tree struct {
 	Children []Tree
 }
 
-func (tree *Tree) Draw(panel *panels.Panel, x, y, expand int) {
+func (tree *Tree) Draw(panel *elements.Panel, x, y, expand int) {
 	tree.draw(panel, x, y, false, false, expand)
 }
 
-func (tree *Tree) draw(panel *panels.Panel, x, y int, child bool, last bool, expand int) int {
+func (tree *Tree) draw(panel *elements.Panel, x, y int, child bool, last bool, expand int) int {
 	panel.Window().Move(y, x)
 	if child {
 		if last {

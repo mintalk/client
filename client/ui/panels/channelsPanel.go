@@ -1,10 +1,12 @@
 package panels
 
+import "mintalk/client/ui/elements"
+
 type ChannelsPanel struct {
-	*Panel
+	*elements.Panel
 }
 
 func NewChannelsPanel() (*ChannelsPanel, error) {
-	panel, err := NewPanel(1, 1, "ChannelPanels")
+	panel, err := elements.NewPanel(1, 1)
 	return &ChannelsPanel{panel}, err
 }

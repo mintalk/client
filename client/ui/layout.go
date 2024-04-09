@@ -1,6 +1,8 @@
 package ui
 
-import "mintalk/client/ui/panels"
+import (
+	"mintalk/client/ui/elements"
+)
 
 type Direction uint
 
@@ -10,7 +12,7 @@ const (
 )
 
 type Layout struct {
-	Panel     *panels.Panel
+	Panel     *elements.Panel
 	Child     *Layout
 	Direction Direction
 }
@@ -51,7 +53,7 @@ func (layout *Layout) Update(maxWidth, maxHeight, offsetX, offsetY int) {
 	panelWidth := widthFraction * availableWidth
 	panelHeight := heightFraction * availableHeight
 
-	layout.Panel.Window().Resize(int(panelHeight), int(panelWidth))
+	layout.Panel.Resize(int(panelWidth), int(panelHeight))
 	layout.Panel.Move(offsetY, offsetX)
 	layout.Panel.Window().Box(0, 0)
 

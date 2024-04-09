@@ -7,18 +7,21 @@ import (
 	gc "github.com/rthornton128/goncurses"
 )
 
+type InputHandler func(string)
+
 type Input struct {
-	Length     int
-	Cursor     int
-	MarkCursor int
-	Offset     int
-	Active     bool
-	message    string
-	mark       bool
+	Length  int
+	Cursor  int
+	X       int
+	Y       int
+	Offset  int
+	Active  bool
+	Handler InputHandler
+	message string
 }
 
-func NewInput(length int) *Input {
-	return &Input{length, 0, 0, 0, false, "", false}
+func NewInput(length int, handler InputHandler) *Input {
+	return &Input{length, 0, 0, 0, 0, false, handler, ""}
 }
 
 func (input *Input) Update(key gc.Key) {
@@ -40,6 +43,13 @@ func (input *Input) Update(key gc.Key) {
 		if input.Cursor < len(input.message) {
 			input.moveRight()
 		}
+	} else if key == gc.KEY_ENTER || key == gc.KEY_RETURN {
+		if input.Handler != nil {
+			input.Handler(input.message)
+		}
+		input.message = ""
+		input.Cursor = 0
+		input.Offset = 0
 	} else {
 		if !strconv.IsPrint(rune(key)) {
 			return
@@ -55,7 +65,6 @@ func (input *Input) Update(key gc.Key) {
 		input.message = newMessage
 		input.moveRight()
 	}
-	input.mark = false
 }
 
 func (input *Input) moveLeft(scroll bool) {
@@ -81,15 +90,24 @@ func (input *Input) moveRight() {
 	}
 }
 
-func (input *Input) Draw(window *gc.Window, x, y int) {
+func (input *Input) Draw(window *gc.Window) {
 	printedMessage := input.message[input.Offset:]
 	if len(printedMessage) < input.Length {
 		printedMessage += strings.Repeat(" ", input.Length-len(printedMessage))
 	}
 	realCursor := input.Cursor - input.Offset
 	printedMessage = printedMessage[:input.Length]
-	window.MovePrint(y, x, printedMessage)
+	window.MovePrint(input.Y, input.X, printedMessage)
 	window.AttrOn(gc.A_REVERSE)
-	window.MoveAddChar(y, x+realCursor, gc.Char(printedMessage[realCursor]))
+	window.MoveAddChar(input.Y, input.X+realCursor, gc.Char(printedMessage[realCursor]))
 	window.AttrOff(gc.A_REVERSE)
+}
+
+func (input *Input) Move(x, y int) {
+	input.X = x
+	input.Y = y
+}
+
+func (input *Input) Resize(length int) {
+	input.Length = length
 }
