@@ -51,7 +51,7 @@ func (app *App) Run() {
 		slog.Error("could not create window", "err", err)
 		return
 	}
-	err = window.Create(app.connector, app.channelCache)
+	err = window.Create(app.connector, app.channelCache, app.serverCache)
 	if err != nil {
 		slog.Error("could not create window", "err", err)
 		return

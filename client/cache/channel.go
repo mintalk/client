@@ -3,6 +3,7 @@ package cache
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -10,10 +11,15 @@ type Message struct {
 	Sender   uint
 	Contents string
 	Time     time.Time
+	Username string
 }
 
 func (message Message) String() string {
-	return fmt.Sprintf("%v@%v %v", message.Sender, message.Time.Format(time.Kitchen), message.Contents)
+	username := message.Username
+	if username == "" {
+		username = strconv.FormatUint(uint64(message.Sender), 10)
+	}
+	return fmt.Sprintf("%v@%v %v", username, message.Time.Format(time.Kitchen), message.Contents)
 }
 
 type ChannelCache struct {

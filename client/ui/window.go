@@ -39,7 +39,7 @@ func NewWindow() (*Window, error) {
 	return window, nil
 }
 
-func (window *Window) Create(connector *network.Connector, channelCache *cache.ChannelCache) error {
+func (window *Window) Create(connector *network.Connector, channelCache *cache.ChannelCache, serverCache *cache.ServerCache) error {
 	window.Keypad(true)
 	gc.Echo(false)
 	gc.CBreak(true)
@@ -53,7 +53,7 @@ func (window *Window) Create(connector *network.Connector, channelCache *cache.C
 	go window.CloseListener(sigc)
 
 	var err error
-	window.channel, err = panels.NewChannelPanel(connector, channelCache)
+	window.channel, err = panels.NewChannelPanel(connector, channelCache, serverCache)
 	if err != nil {
 		return err
 	}

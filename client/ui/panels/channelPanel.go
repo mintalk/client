@@ -11,13 +11,14 @@ import (
 
 type ChannelPanel struct {
 	*elements.Panel
-	input     *elements.Input
-	list      *elements.List
-	cache     *cache.ChannelCache
-	Connector *network.Connector
+	input        *elements.Input
+	list         *elements.List
+	channelCache *cache.ChannelCache
+	serverCache  *cache.ServerCache
+	Connector    *network.Connector
 }
 
-func NewChannelPanel(connector *network.Connector, channelCache *cache.ChannelCache) (*ChannelPanel, error) {
+func NewChannelPanel(connector *network.Connector, channelCache *cache.ChannelCache, serverCache *cache.ServerCache) (*ChannelPanel, error) {
 	panel, err := elements.NewPanel(3, 1)
 	if err != nil {
 		return nil, err
@@ -27,8 +28,10 @@ func NewChannelPanel(connector *network.Connector, channelCache *cache.ChannelCa
 	channelPanel.Add(channelPanel.input)
 	channelPanel.list = elements.NewList(1, 1)
 	channelPanel.Add(channelPanel.list)
-	channelPanel.cache = channelCache
-	channelPanel.cache.AddListener(channelPanel.updateListData)
+	channelPanel.channelCache = channelCache
+	channelPanel.channelCache.AddListener(channelPanel.updateListData)
+	channelPanel.serverCache = serverCache
+	channelPanel.serverCache.AddListener(channelPanel.updateListData)
 	return channelPanel, nil
 }
 
@@ -53,7 +56,13 @@ func (panel *ChannelPanel) sendMessage(message string) {
 
 func (panel *ChannelPanel) updateListData() {
 	panel.list.Data = make([]fmt.Stringer, 0)
-	for _, message := range panel.cache.GetMessages() {
+	for _, message := range panel.channelCache.GetMessages() {
+		username, ok := panel.serverCache.Users[message.Sender]
+		if ok {
+			message.Username = username
+		} else {
+			panel.Connector.LoadUser(message.Sender)
+		}
 		panel.list.Add(message)
 	}
 	panel.list.ProcessData()
