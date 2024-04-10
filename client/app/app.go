@@ -2,6 +2,7 @@ package app
 
 import (
 	"flag"
+	"fmt"
 	"log/slog"
 	"mintalk/client/cache"
 	"mintalk/client/network"
@@ -21,13 +22,17 @@ func NewApp() *App {
 	return &App{channelCache: cache.NewChannelCache(), serverCache: cache.NewServerCache()}
 }
 
-func (app *App) ReadArgs() {
+func (app *App) ReadArgs() error {
 	flag.Parse()
 
 	args := flag.Args()
+	if len(args) < 3 {
+		return fmt.Errorf("usage: <host> <username> <password>")
+	}
 	app.Host = args[0]
 	app.Username = args[1]
 	app.Password = args[2]
+	return nil
 }
 
 func (app *App) Run() {

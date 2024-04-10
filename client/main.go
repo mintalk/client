@@ -1,9 +1,16 @@
 package main
 
-import "mintalk/client/app"
+import (
+	"log/slog"
+	"mintalk/client/app"
+)
 
 func main() {
 	app := app.NewApp()
-	app.ReadArgs()
+	err := app.ReadArgs()
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
 	app.Run()
 }
