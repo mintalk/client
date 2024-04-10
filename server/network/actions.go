@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (server *Server) ActionMessage(sid string, data NetworkData) {
+func (server *Server) ActionMessage(sid string, data map[string]interface{}) {
 	session := server.sessionManager.GetSession(sid)
 	if session == nil {
 		return
@@ -17,21 +17,22 @@ func (server *Server) ActionMessage(sid string, data NetworkData) {
 		Time: time.Now(),
 	}
 	server.database.Create(message)
-	rawTime, err := message.Time.GobEncode()
+	messageTime, err := message.Time.MarshalText()
 	if err != nil {
-		slog.Error("failed to encode time", "err", err)
+		slog.Error("failed to marshal message time", "err", err)
+		return
 	}
-	broadcast := NetworkData{
+	broadcast := map[string]interface{}{
 		"action": "message",
 		"mid":    message.ID,
 		"text":   message.Text,
 		"uid":    session.User.ID,
-		"time":   rawTime,
+		"time":   messageTime,
 	}
 	server.Broadcast(broadcast)
 }
 
-func (server *Server) ActionFetch(sid string, data NetworkData) {
+func (server *Server) ActionFetch(sid string, data map[string]interface{}) {
 	limit, ok := data["limit"].(int)
 	if !ok {
 		limit = 0
@@ -46,23 +47,34 @@ func (server *Server) ActionFetch(sid string, data NetworkData) {
 		slog.Error("failed to fetch messages", "err", err)
 		return
 	}
-	responseMessages := make([]NetworkData, len(messages))
+	responseMessages := make([]string, len(messages))
 	for i, message := range messages {
-		responseMessages[i] = NetworkData{
-			"id":   message.ID,
+		messageTime, err := message.Time.MarshalText()
+		if err != nil {
+			slog.Error("failed to marshal message time", "err", err)
+			return
+		}
+		messageData := map[string]interface{}{
+			"mid":  message.ID,
 			"uid":  message.UID,
 			"text": message.Text,
-			"time": message.Time,
+			"time": messageTime,
 		}
+		rawMessageData, err := Encode(messageData)
+		if err != nil {
+			slog.Error("failed to encode message data", "err", err)
+			return
+		}
+		responseMessages[i] = string(rawMessageData)
 	}
-	response := NetworkData{
+	response := map[string]interface{}{
 		"action":   "fetch",
 		"messages": responseMessages,
 	}
 	server.senders[sid] <- response
 }
 
-func (server *Server) ActionUser(sid string, data NetworkData) {
+func (server *Server) ActionUser(sid string, data map[string]interface{}) {
 	uid, ok := data["uid"].(uint)
 	if !ok {
 		return
@@ -73,7 +85,7 @@ func (server *Server) ActionUser(sid string, data NetworkData) {
 		slog.Error("failed to find user", "err", err)
 		return
 	}
-	response := NetworkData{
+	response := map[string]interface{}{
 		"action": "user",
 		"uid":    user.ID,
 		"name":   user.Name,

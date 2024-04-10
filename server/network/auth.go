@@ -6,15 +6,29 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func ValidateAuthRequest(database *db.Connection, data NetworkData) (bool, error) {
-	var user *db.User
-	err := database.Where(&db.User{Name: data["username"].(string)}).First(&user).Error
+func ValidateAuthRequest(database *db.Connection, data map[string]interface{}) (bool, error) {
+	var user db.User
+	user.Name = data["username"].(string)
+	err := database.Where(&user).First(&user).Error
 	if err != nil {
 		return false, err
 	}
-	if user == nil {
-		return false, nil
+	if user.Password == "" {
+		CreatePassword(&user, data["password"].(string))
+		err = database.Save(user).Error
+		if err != nil {
+			return false, err
+		}
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data["password"].(string)))
 	return err == nil, nil
+}
+
+func CreatePassword(user *db.User, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hash)
+	return nil
 }

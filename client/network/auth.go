@@ -18,7 +18,7 @@ func (connector *Connector) SendAuth(username, password string) error {
 	if err != nil {
 		return err
 	}
-	data := make(NetworkData)
+	data := make(map[string]interface{})
 	data["username"] = username
 	data["password"] = password
 	encodedData, err := Encode(data)

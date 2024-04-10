@@ -9,7 +9,7 @@ import (
 )
 
 type Server struct {
-	senders        map[string]chan<- NetworkData
+	senders        map[string]chan<- map[string]interface{}
 	sessionManager *SessionManager
 	database       *db.Connection
 	host           string
@@ -17,7 +17,7 @@ type Server struct {
 
 func NewServer(database *db.Connection, conf *config.Config) *Server {
 	return &Server{
-		senders:        make(map[string]chan<- NetworkData),
+		senders:        make(map[string]chan<- map[string]interface{}),
 		sessionManager: NewSessionManager(time.Duration(conf.SessionLifetime)*time.Minute, 32),
 		database:       database,
 		host:           conf.Host,
@@ -54,13 +54,18 @@ func (server *Server) handleClient(conn net.Conn) {
 		return
 	}
 
-	sender := make(chan NetworkData)
+	sender := make(chan map[string]interface{})
 	server.senders[executor.Session] = sender
 	go executor.Send(sender)
-	receiver := make(chan NetworkData)
+	receiver := make(chan map[string]interface{})
 	go executor.Receive(receiver)
 	for {
-		request := <-receiver
+		request, ok := <-receiver
+		if !ok {
+			close(server.senders[executor.Session])
+			delete(server.senders, executor.Session)
+			break
+		}
 		if request == nil {
 			continue
 		}
@@ -79,10 +84,11 @@ func (server *Server) handleClient(conn net.Conn) {
 	}
 }
 
-func (server *Server) Broadcast(data NetworkData) {
+func (server *Server) Broadcast(data map[string]interface{}) {
 	for sid, sender := range server.senders {
 		session := server.sessionManager.GetSession(sid)
 		if session == nil {
+			close(server.senders[sid])
 			delete(server.senders, sid)
 			continue
 		}

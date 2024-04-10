@@ -12,8 +12,8 @@ type Connector struct {
 	Host     string
 	conn     net.Conn
 	session  string
-	sender   chan NetworkData
-	receiver chan NetworkData
+	sender   chan map[string]interface{}
+	receiver chan map[string]interface{}
 }
 
 func NewConnector(host string) (*Connector, error) {
@@ -30,8 +30,8 @@ func (connector *Connector) Start(username, password string) error {
 	if err := connector.Auth(username, password); err != nil {
 		return err
 	}
-	connector.sender = make(chan NetworkData)
-	connector.receiver = make(chan NetworkData)
+	connector.sender = make(chan map[string]interface{})
+	connector.receiver = make(chan map[string]interface{})
 	go connector.Send(connector.sender)
 	go connector.Receive(connector.receiver)
 	return nil
@@ -42,11 +42,10 @@ func (connector *Connector) Run(channelCache *cache.ChannelCache, serverCache *c
 		data := <-connector.receiver
 		switch data["action"].(string) {
 		case "message":
-			rawTime := data["time"].([]byte)
 			var messageTime time.Time
-			err := messageTime.GobDecode(rawTime)
+			err := messageTime.UnmarshalText([]byte(data["time"].([]byte)))
 			if err != nil {
-				slog.Error("failed to decode time", "err", err)
+				slog.Error("failed to parse time", "err", err)
 				continue
 			}
 			message := cache.Message{
@@ -58,11 +57,22 @@ func (connector *Connector) Run(channelCache *cache.ChannelCache, serverCache *c
 		case "user":
 			serverCache.AddUser(data["uid"].(uint), data["name"].(string))
 		case "fetch":
-			for _, message := range data["messages"].([]NetworkData) {
+			for _, messageData := range data["messages"].([]string) {
+				message, err := Decode([]byte(messageData))
+				if err != nil {
+					slog.Error("failed to decode message", "err", err)
+					continue
+				}
+				var messageTime time.Time
+				err = messageTime.UnmarshalText([]byte(message["time"].([]byte)))
+				if err != nil {
+					slog.Error("failed to parse time", "err", err)
+					continue
+				}
 				messageItem := cache.Message{
 					Sender:   message["uid"].(uint),
 					Contents: message["text"].(string),
-					Time:     message["time"].(time.Time),
+					Time:     messageTime,
 				}
 				channelCache.AddMessage(message["mid"].(uint), messageItem)
 			}
@@ -71,27 +81,27 @@ func (connector *Connector) Run(channelCache *cache.ChannelCache, serverCache *c
 }
 
 func (connector *Connector) LoadUser(uid uint) {
-	connector.sender <- NetworkData{
+	connector.sender <- map[string]interface{}{
 		"action": "user",
 		"uid":    uid,
 	}
 }
 
 func (connector *Connector) LoadMessages(limit int) {
-	connector.sender <- NetworkData{
+	connector.sender <- map[string]interface{}{
 		"action": "fetch",
 		"limit":  limit,
 	}
 }
 
 func (connector *Connector) SendMessage(text string) {
-	connector.sender <- NetworkData{
+	connector.sender <- map[string]interface{}{
 		"action": "message",
 		"text":   text,
 	}
 }
 
-func (connector *Connector) Receive(received chan<- NetworkData) {
+func (connector *Connector) Receive(received chan<- map[string]interface{}) {
 	for {
 		rawData, err := secure.ReceiveAES(connector.conn, connector.session)
 		if err != nil {
@@ -107,7 +117,7 @@ func (connector *Connector) Receive(received chan<- NetworkData) {
 	}
 }
 
-func (connector *Connector) Send(data <-chan NetworkData) {
+func (connector *Connector) Send(data <-chan map[string]interface{}) {
 	for {
 		sendData := <-data
 		rawData, err := Encode(sendData)

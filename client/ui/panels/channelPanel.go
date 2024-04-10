@@ -44,6 +44,7 @@ func (panel *ChannelPanel) Resize() {
 	panel.input.Move(1, height-2)
 	panel.list.Resize(width-2, height-3)
 	panel.list.Move(1, 1)
+	panel.Connector.LoadMessages(width - 2)
 }
 
 func (panel *ChannelPanel) sendMessage(message string) {
@@ -52,7 +53,7 @@ func (panel *ChannelPanel) sendMessage(message string) {
 
 func (panel *ChannelPanel) updateListData() {
 	panel.list.Data = make([]fmt.Stringer, 0)
-	for _, message := range panel.cache.Messages {
+	for _, message := range panel.cache.GetMessages() {
 		panel.list.Add(message)
 	}
 	panel.list.ProcessData()

@@ -31,7 +31,7 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	response := NetworkData{"authed": authed}
+	response := map[string]interface{}{"authed": authed}
 	if authed {
 		var user *db.User
 		err := executor.Database.Where(&db.User{Name: request["username"].(string)}).First(&user).Error
@@ -59,12 +59,16 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 	return authed, nil
 }
 
-func (executor *ProtocolExecutor) Receive(received chan<- NetworkData) {
+func (executor *ProtocolExecutor) Receive(received chan<- map[string]interface{}) {
 	for {
 		rawData, err := secure.ReceiveAES(executor.Conn, executor.Session)
 		if err != nil {
 			slog.Error("failed to receive data", "err", err)
 			continue
+		}
+		if rawData == nil || len(rawData) == 0 {
+			close(received)
+			return
 		}
 		data, err := Decode(rawData)
 		if err != nil {
@@ -75,9 +79,15 @@ func (executor *ProtocolExecutor) Receive(received chan<- NetworkData) {
 	}
 }
 
-func (executor *ProtocolExecutor) Send(data <-chan NetworkData) {
+func (executor *ProtocolExecutor) Send(data <-chan map[string]interface{}) {
 	for {
-		sendData := <-data
+		sendData, ok := <-data
+		if !ok {
+			return
+		}
+		if sendData == nil {
+			continue
+		}
 		rawData, err := Encode(sendData)
 		if err != nil {
 			slog.Error("failed to encode data", "err", err)
