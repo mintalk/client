@@ -56,7 +56,7 @@ func (connector *Connector) Run(channelCache *cache.ChannelCache, serverCache *c
 			channelCache.AddMessage(data["mid"].(uint), message)
 		case "user":
 			serverCache.AddUser(data["uid"].(uint), data["name"].(string))
-		case "fetch":
+		case "fetchmsg":
 			for _, messageData := range data["messages"].([]string) {
 				message, err := Decode([]byte(messageData))
 				if err != nil {
@@ -76,6 +76,28 @@ func (connector *Connector) Run(channelCache *cache.ChannelCache, serverCache *c
 				}
 				channelCache.AddMessage(message["mid"].(uint), messageItem)
 			}
+		case "fetchgroup":
+			for _, groupData := range data["groups"].([]string) {
+				group, err := Decode([]byte(groupData))
+				if err != nil {
+					slog.Error("failed to decode group", "err", err)
+					continue
+				}
+				serverCache.AddGroup(group["gid"].(uint), cache.ServerGroup{
+					Name: group["name"].(string), Parent: group["parent"].(uint), HasParent: group["hasParent"].(bool),
+				})
+			}
+		case "fetchchannel":
+			for _, channelData := range data["channels"].([]string) {
+				channel, err := Decode([]byte(channelData))
+				if err != nil {
+					slog.Error("failed to decode channel", "err", err)
+					continue
+				}
+				serverCache.AddChannel(channel["cid"].(uint), cache.ServerChannel{
+					Name: channel["name"].(string), Group: channel["group"].(uint),
+				})
+			}
 		}
 	}
 }
@@ -89,8 +111,20 @@ func (connector *Connector) LoadUser(uid uint) {
 
 func (connector *Connector) LoadMessages(limit int) {
 	connector.sender <- map[string]interface{}{
-		"action": "fetch",
+		"action": "fetchmsg",
 		"limit":  limit,
+	}
+}
+
+func (connector *Connector) LoadGroups() {
+	connector.sender <- map[string]interface{}{
+		"action": "fetchgroup",
+	}
+}
+
+func (connector *Connector) LoadChannels() {
+	connector.sender <- map[string]interface{}{
+		"action": "fetchchannel",
 	}
 }
 

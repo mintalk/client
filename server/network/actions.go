@@ -32,7 +32,7 @@ func (server *Server) ActionMessage(sid string, data map[string]interface{}) {
 	server.Broadcast(broadcast)
 }
 
-func (server *Server) ActionFetch(sid string, data map[string]interface{}) {
+func (server *Server) ActionFetchMessages(sid string, data map[string]interface{}) {
 	limit, ok := data["limit"].(int)
 	if !ok {
 		limit = 0
@@ -68,8 +68,65 @@ func (server *Server) ActionFetch(sid string, data map[string]interface{}) {
 		responseMessages[i] = string(rawMessageData)
 	}
 	response := map[string]interface{}{
-		"action":   "fetch",
+		"action":   "fetchmsg",
 		"messages": responseMessages,
+	}
+	server.senders[sid] <- response
+}
+
+func (server *Server) ActionFetchGroups(sid string, data map[string]interface{}) {
+	var groups []db.ChannelGroup
+	err := server.database.Find(&groups).Error
+	if err != nil {
+		slog.Error("failed to fetch groups", "err", err)
+		return
+	}
+	responseGroups := make([]string, len(groups))
+	for i, group := range groups {
+		groupData := map[string]interface{}{
+			"gid":       group.ID,
+			"name":      group.Name,
+			"parent":    group.Parent,
+			"hasParent": group.HasParent,
+		}
+		rawGroupData, err := Encode(groupData)
+		if err != nil {
+			slog.Error("failed to encode group data", "err", err)
+			return
+		}
+		responseGroups[i] = string(rawGroupData)
+	}
+	response := map[string]interface{}{
+		"action": "fetchgroup",
+		"groups": responseGroups,
+	}
+	server.senders[sid] <- response
+}
+
+func (server *Server) ActionFetchChannels(sid string, data map[string]interface{}) {
+	var channels []db.Channel
+	err := server.database.Find(&channels).Error
+	if err != nil {
+		slog.Error("failed to fetch channels", "err", err)
+		return
+	}
+	responseChannels := make([]string, len(channels))
+	for i, channel := range channels {
+		channelData := map[string]interface{}{
+			"cid":   channel.ID,
+			"name":  channel.Name,
+			"group": channel.Group,
+		}
+		rawChannelData, err := Encode(channelData)
+		if err != nil {
+			slog.Error("failed to encode channel data", "err", err)
+			return
+		}
+		responseChannels[i] = string(rawChannelData)
+	}
+	response := map[string]interface{}{
+		"action":   "fetchchannel",
+		"channels": responseChannels,
 	}
 	server.senders[sid] <- response
 }

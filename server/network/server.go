@@ -76,8 +76,12 @@ func (server *Server) handleClient(conn net.Conn) {
 		switch action {
 		case "message":
 			server.ActionMessage(executor.Session, request)
-		case "fetch":
-			server.ActionFetch(executor.Session, request)
+		case "fetchmsg":
+			server.ActionFetchMessages(executor.Session, request)
+		case "fetchgroup":
+			server.ActionFetchGroups(executor.Session, request)
+		case "fetchchannel":
+			server.ActionFetchChannels(executor.Session, request)
 		case "user":
 			server.ActionUser(executor.Session, request)
 		}

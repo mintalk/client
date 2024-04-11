@@ -57,7 +57,7 @@ func (window *Window) Create(connector *network.Connector, channelCache *cache.C
 	if err != nil {
 		return err
 	}
-	window.channels, err = panels.NewChannelsPanel()
+	window.channels, err = panels.NewChannelsPanel(connector, serverCache)
 	if err != nil {
 		return err
 	}
@@ -144,4 +144,5 @@ func (window *Window) Draw() error {
 func (window *Window) Resize(height, width int) {
 	window.layout.Update(width, height, 0, 0)
 	window.channel.Resize()
+	window.channels.Resize()
 }

@@ -51,6 +51,8 @@ func (app *App) Run() {
 
 	go app.connector.Run(app.channelCache, app.serverCache)
 
+	app.connector.LoadChannels()
+
 	window, err := ui.NewWindow()
 	if err != nil {
 		slog.Error("could not create window", "err", err)
