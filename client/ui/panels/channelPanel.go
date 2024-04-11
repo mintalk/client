@@ -35,7 +35,15 @@ func NewChannelPanel(connector *network.Connector, serverCache *cache.ServerCach
 
 func (panel *ChannelPanel) Draw(window *gc.Window) error {
 	panel.input.Active = panel.Active
-	return panel.Panel.Draw(window)
+	err := panel.Panel.Draw(window)
+	if err != nil {
+		return err
+	}
+	channel, ok := panel.serverCache.Channels[panel.ActiveChannel]
+	if ok {
+		panel.Window().MovePrint(0, 2, channel.Name)
+	}
+	return nil
 }
 
 func (panel *ChannelPanel) Resize() {

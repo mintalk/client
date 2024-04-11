@@ -2,6 +2,7 @@ package elements
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	gc "github.com/rthornton128/goncurses"
@@ -70,6 +71,9 @@ func (tree *Tree) Expand(value int) {
 }
 
 func (tree *Tree) Draw(window *gc.Window) {
+	sort.Slice(tree.Nodes, func(i, j int) bool {
+		return tree.Nodes[i].Item.Value.String() < tree.Nodes[j].Item.Value.String()
+	})
 	offset := 0
 	for _, node := range tree.Nodes {
 		cursor := tree.Cursor - offset
@@ -86,6 +90,9 @@ func (tree *Tree) Draw(window *gc.Window) {
 }
 
 func (node *TreeNode) draw(window *gc.Window, x, y, originX, width, height int, child bool, last bool, expand int, cursor int, click bool) int {
+	sort.Slice(node.Children, func(i, j int) bool {
+		return node.Children[i].Item.Value.String() < node.Children[j].Item.Value.String()
+	})
 	if originX < x {
 		window.MovePrint(y, originX, strings.Repeat(" ", x-originX))
 	}
