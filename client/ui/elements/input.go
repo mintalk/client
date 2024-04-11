@@ -98,9 +98,13 @@ func (input *Input) Draw(window *gc.Window) {
 	realCursor := input.Cursor - input.Offset
 	printedMessage = printedMessage[:input.Length]
 	window.MovePrint(input.Y, input.X, printedMessage)
-	window.AttrOn(gc.A_REVERSE)
+	if input.Active {
+		window.AttrOn(gc.A_REVERSE)
+	}
 	window.MoveAddChar(input.Y, input.X+realCursor, gc.Char(printedMessage[realCursor]))
-	window.AttrOff(gc.A_REVERSE)
+	if input.Active {
+		window.AttrOff(gc.A_REVERSE)
+	}
 }
 
 func (input *Input) Move(x, y int) {

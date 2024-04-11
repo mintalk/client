@@ -45,6 +45,12 @@ func (list *List) Draw(window *gc.Window) {
 		}
 		window.MovePrint(list.Y+i, list.X, line)
 	}
+	if begin == 0 {
+		freeSpace := list.Height - len(list.lines)
+		for i := 0; i < freeSpace; i++ {
+			window.MovePrint(list.Y+len(list.lines)+i, list.X, strings.Repeat(" ", list.Width))
+		}
+	}
 }
 
 func (list *List) Update(key gc.Key) {

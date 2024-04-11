@@ -1,6 +1,7 @@
 package panels
 
 import (
+	gc "github.com/rthornton128/goncurses"
 	"mintalk/client/cache"
 	"mintalk/client/network"
 	"mintalk/client/ui/elements"
@@ -8,14 +9,15 @@ import (
 
 type ChannelsPanel struct {
 	*elements.Panel
-	Connector   *network.Connector
-	serverCache *cache.ServerCache
-	tree        *elements.Tree
+	Connector    *network.Connector
+	serverCache  *cache.ServerCache
+	tree         *elements.Tree
+	channelPanel *ChannelPanel
 }
 
-func NewChannelsPanel(connector *network.Connector, serverCache *cache.ServerCache) (*ChannelsPanel, error) {
+func NewChannelsPanel(connector *network.Connector, channelPanel *ChannelPanel, serverCache *cache.ServerCache) (*ChannelsPanel, error) {
 	panel, err := elements.NewPanel(1, 1)
-	channelsPanel := &ChannelsPanel{Panel: panel, Connector: connector, serverCache: serverCache}
+	channelsPanel := &ChannelsPanel{Panel: panel, Connector: connector, channelPanel: channelPanel, serverCache: serverCache}
 	channelsPanel.tree = elements.NewTree()
 	channelsPanel.tree.Expand(1)
 	channelsPanel.Add(channelsPanel.tree)
@@ -33,6 +35,11 @@ func (panel *ChannelsPanel) Resize() error {
 	return nil
 }
 
+func (panel *ChannelsPanel) Update(key gc.Key) {
+	panel.tree.Active = panel.Panel.Active
+	panel.Panel.Update(key)
+}
+
 func (panel *ChannelsPanel) updateTreeData() {
 	panel.tree.Nodes = make([]*elements.TreeNode, 0)
 	groupsLeft := make([]uint, 0)
@@ -45,7 +52,7 @@ func (panel *ChannelsPanel) updateTreeData() {
 		for _, gid := range groupsLeft {
 			group := panel.serverCache.Groups[gid]
 			if !group.HasParent {
-				node := elements.NewTreeNode(group)
+				node := elements.NewTreeNode(elements.TreeItem{Value: group})
 				panel.tree.Nodes = append(panel.tree.Nodes, node)
 				nodeAssignments[gid] = node
 				continue
@@ -55,14 +62,16 @@ func (panel *ChannelsPanel) updateTreeData() {
 				newGroupsLeft = append(newGroupsLeft, gid)
 				continue
 			}
-			node := elements.NewTreeNode(group)
+			node := elements.NewTreeNode(elements.TreeItem{Value: group})
 			parent.Children = append(parent.Children, node)
 			nodeAssignments[gid] = node
 		}
 		groupsLeft = newGroupsLeft
 	}
-	for _, channel := range panel.serverCache.Channels {
-		node := elements.NewTreeNode(channel)
+	for cid, channel := range panel.serverCache.Channels {
+		node := elements.NewTreeNode(elements.TreeItem{Value: channel, OnClick: func() {
+			panel.channelPanel.MoveChannel(cid)
+		}})
 		parent, ok := nodeAssignments[channel.Group]
 		if !ok {
 			continue

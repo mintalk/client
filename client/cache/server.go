@@ -22,20 +22,22 @@ func (channel ServerChannel) String() string {
 }
 
 type ServerCache struct {
-	lastUpdated time.Time
-	Hostname    string
-	Users       map[uint]string
-	Groups      map[uint]ServerGroup
-	Channels    map[uint]ServerChannel
-	Listeners   []func()
+	lastUpdated   time.Time
+	Hostname      string
+	Users         map[uint]string
+	Groups        map[uint]ServerGroup
+	Channels      map[uint]ServerChannel
+	ChannelCaches map[uint]*ChannelCache
+	Listeners     []func()
 }
 
 func NewServerCache() *ServerCache {
 	return &ServerCache{
-		lastUpdated: time.Now(),
-		Users:       make(map[uint]string),
-		Groups:      make(map[uint]ServerGroup),
-		Channels:    make(map[uint]ServerChannel),
+		lastUpdated:   time.Now(),
+		Users:         make(map[uint]string),
+		Groups:        make(map[uint]ServerGroup),
+		Channels:      make(map[uint]ServerChannel),
+		ChannelCaches: make(map[uint]*ChannelCache),
 	}
 }
 
@@ -62,4 +64,13 @@ func (cache *ServerCache) AddChannel(cid uint, channel ServerChannel) {
 	for _, listener := range cache.Listeners {
 		listener()
 	}
+}
+
+func (cache *ServerCache) GetChannelCache(cid uint) *ChannelCache {
+	channelCache, ok := cache.ChannelCaches[cid]
+	if !ok {
+		cache.ChannelCaches[cid] = NewChannelCache()
+		channelCache = cache.ChannelCaches[cid]
+	}
+	return channelCache
 }

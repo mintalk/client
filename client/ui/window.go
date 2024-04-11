@@ -39,7 +39,7 @@ func NewWindow() (*Window, error) {
 	return window, nil
 }
 
-func (window *Window) Create(connector *network.Connector, channelCache *cache.ChannelCache, serverCache *cache.ServerCache) error {
+func (window *Window) Create(connector *network.Connector, serverCache *cache.ServerCache) error {
 	window.Keypad(true)
 	gc.Echo(false)
 	gc.CBreak(true)
@@ -53,11 +53,11 @@ func (window *Window) Create(connector *network.Connector, channelCache *cache.C
 	go window.CloseListener(sigc)
 
 	var err error
-	window.channel, err = panels.NewChannelPanel(connector, channelCache, serverCache)
+	window.channel, err = panels.NewChannelPanel(connector, serverCache)
 	if err != nil {
 		return err
 	}
-	window.channels, err = panels.NewChannelsPanel(connector, serverCache)
+	window.channels, err = panels.NewChannelsPanel(connector, window.channel, serverCache)
 	if err != nil {
 		return err
 	}
@@ -102,24 +102,23 @@ func (window *Window) Run() {
 }
 
 func (window *Window) Update() {
+	window.channel.Active = window.State.ActiveTab == TabChannel
+	window.channels.Active = window.State.ActiveTab == TabChannels
+
 	char := window.GetChar()
-	if char == 0 {
-		return
-	}
-	window.channel.Update(char)
-	window.channels.Update(char)
-	switch char {
-	case '\n':
-		window.State.Mode = ModeInsert
-	case gc.KEY_TAB:
+	if char == gc.KEY_ENTER || char == gc.KEY_RETURN {
+		window.State.ActiveTab = TabChannel
+	} else if char == gc.KEY_TAB {
 		if window.State.ActiveTab == TabChannels {
 			window.State.ActiveTab = TabChannel
 		} else {
 			window.State.ActiveTab = TabChannels
 		}
-	case gc.KEY_ESC:
-		window.State.Mode = ModeNormal
+	} else if char == gc.KEY_RESIZE {
+		window.Resize(window.MaxYX())
 	}
+	window.channel.Update(char)
+	window.channels.Update(char)
 }
 
 func (window *Window) Draw() error {

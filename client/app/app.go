@@ -10,16 +10,15 @@ import (
 )
 
 type App struct {
-	Host         string
-	Username     string
-	Password     string
-	connector    *network.Connector
-	channelCache *cache.ChannelCache
-	serverCache  *cache.ServerCache
+	Host        string
+	Username    string
+	Password    string
+	connector   *network.Connector
+	serverCache *cache.ServerCache
 }
 
 func NewApp() *App {
-	return &App{channelCache: cache.NewChannelCache(), serverCache: cache.NewServerCache()}
+	return &App{serverCache: cache.NewServerCache()}
 }
 
 func (app *App) ReadArgs() error {
@@ -49,7 +48,7 @@ func (app *App) Run() {
 		return
 	}
 
-	go app.connector.Run(app.channelCache, app.serverCache)
+	go app.connector.Run(app.serverCache)
 
 	app.connector.LoadChannels()
 
@@ -58,7 +57,7 @@ func (app *App) Run() {
 		slog.Error("could not create window", "err", err)
 		return
 	}
-	err = window.Create(app.connector, app.channelCache, app.serverCache)
+	err = window.Create(app.connector, app.serverCache)
 	if err != nil {
 		slog.Error("could not create window", "err", err)
 		return

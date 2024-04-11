@@ -12,9 +12,10 @@ func (server *Server) ActionMessage(sid string, data map[string]interface{}) {
 		return
 	}
 	message := &db.Message{
-		UID:  session.User.ID,
-		Text: data["text"].(string),
-		Time: time.Now(),
+		UID:     session.User.ID,
+		Text:    data["text"].(string),
+		Channel: data["cid"].(uint),
+		Time:    time.Now(),
 	}
 	server.database.Create(message)
 	messageTime, err := message.Time.MarshalText()
@@ -27,6 +28,7 @@ func (server *Server) ActionMessage(sid string, data map[string]interface{}) {
 		"mid":    message.ID,
 		"text":   message.Text,
 		"uid":    session.User.ID,
+		"cid":    message.Channel,
 		"time":   messageTime,
 	}
 	server.Broadcast(broadcast)
@@ -37,8 +39,13 @@ func (server *Server) ActionFetchMessages(sid string, data map[string]interface{
 	if !ok {
 		limit = 0
 	}
+	channel, ok := data["cid"].(uint)
+	if !ok {
+		slog.Error("failed to fetch messages", "err", "no channel")
+		return
+	}
 	var messages []db.Message
-	query := server.database.Order("time desc")
+	query := server.database.Where(&db.Message{Channel: channel}).Order("time desc")
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
@@ -57,6 +64,7 @@ func (server *Server) ActionFetchMessages(sid string, data map[string]interface{
 		messageData := map[string]interface{}{
 			"mid":  message.ID,
 			"uid":  message.UID,
+			"cid":  message.Channel,
 			"text": message.Text,
 			"time": messageTime,
 		}

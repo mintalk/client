@@ -37,7 +37,7 @@ func (connector *Connector) Start(username, password string) error {
 	return nil
 }
 
-func (connector *Connector) Run(channelCache *cache.ChannelCache, serverCache *cache.ServerCache) {
+func (connector *Connector) Run(serverCache *cache.ServerCache) {
 	for {
 		data := <-connector.receiver
 		switch data["action"].(string) {
@@ -53,7 +53,7 @@ func (connector *Connector) Run(channelCache *cache.ChannelCache, serverCache *c
 				Contents: data["text"].(string),
 				Time:     messageTime,
 			}
-			channelCache.AddMessage(data["mid"].(uint), message)
+			serverCache.GetChannelCache(data["cid"].(uint)).AddMessage(data["mid"].(uint), message)
 		case "user":
 			serverCache.AddUser(data["uid"].(uint), data["name"].(string))
 		case "fetchmsg":
@@ -74,7 +74,7 @@ func (connector *Connector) Run(channelCache *cache.ChannelCache, serverCache *c
 					Contents: message["text"].(string),
 					Time:     messageTime,
 				}
-				channelCache.AddMessage(message["mid"].(uint), messageItem)
+				serverCache.GetChannelCache(message["cid"].(uint)).AddMessage(message["mid"].(uint), messageItem)
 			}
 		case "fetchgroup":
 			for _, groupData := range data["groups"].([]string) {
@@ -109,10 +109,11 @@ func (connector *Connector) LoadUser(uid uint) {
 	}
 }
 
-func (connector *Connector) LoadMessages(limit int) {
+func (connector *Connector) LoadMessages(limit int, channel uint) {
 	connector.sender <- map[string]interface{}{
 		"action": "fetchmsg",
 		"limit":  limit,
+		"cid":    channel,
 	}
 }
 
@@ -128,10 +129,11 @@ func (connector *Connector) LoadChannels() {
 	}
 }
 
-func (connector *Connector) SendMessage(text string) {
+func (connector *Connector) SendMessage(text string, channel uint) {
 	connector.sender <- map[string]interface{}{
 		"action": "message",
 		"text":   text,
+		"cid":    channel,
 	}
 }
 

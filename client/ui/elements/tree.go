@@ -11,17 +11,26 @@ type Tree struct {
 	Nodes     []*TreeNode
 	X         int
 	Y         int
+	Cursor    int
 	Width     int
 	Height    int
 	Expansion int
+	Active    bool
+	click     bool
+	length    int
 }
 
 type TreeNode struct {
-	Item     fmt.Stringer
+	Item     TreeItem
 	Children []*TreeNode
 }
 
-func NewTreeNode(item fmt.Stringer) *TreeNode {
+type TreeItem struct {
+	Value   fmt.Stringer
+	OnClick func()
+}
+
+func NewTreeNode(item TreeItem) *TreeNode {
 	return &TreeNode{Item: item, Children: make([]*TreeNode, 0)}
 }
 
@@ -29,7 +38,22 @@ func NewTree() *Tree {
 	return &Tree{}
 }
 
-func (tree *Tree) Update(key gc.Key) {}
+func (tree *Tree) Update(key gc.Key) {
+	if !tree.Active {
+		return
+	}
+	if key == gc.KEY_DOWN {
+		if tree.Cursor < tree.length-1 {
+			tree.Cursor++
+		}
+	} else if key == gc.KEY_UP {
+		if tree.Cursor > 0 {
+			tree.Cursor--
+		}
+	} else if key == gc.KEY_ENTER || key == gc.KEY_RETURN || key == gc.KEY_RIGHT {
+		tree.click = true
+	}
+}
 
 func (tree *Tree) Move(x, y int) {
 	tree.X = x
@@ -48,12 +72,20 @@ func (tree *Tree) Expand(value int) {
 func (tree *Tree) Draw(window *gc.Window) {
 	offset := 0
 	for _, node := range tree.Nodes {
-		length := node.draw(window, tree.X, tree.Y+offset, tree.X, tree.Width, tree.Height, false, false, tree.Expansion)
+		cursor := tree.Cursor - offset
+		if !tree.Active {
+			cursor = -1
+		}
+		length := node.draw(window, tree.X, tree.Y+offset, tree.X, tree.Width, tree.Height, false, false, tree.Expansion, cursor, tree.click)
 		offset += length
+	}
+	tree.length = offset
+	if tree.click {
+		tree.click = false
 	}
 }
 
-func (node *TreeNode) draw(window *gc.Window, x, y, originX, width, height int, child bool, last bool, expand int) int {
+func (node *TreeNode) draw(window *gc.Window, x, y, originX, width, height int, child bool, last bool, expand int, cursor int, click bool) int {
 	if originX < x {
 		window.MovePrint(y, originX, strings.Repeat(" ", x-originX))
 	}
@@ -69,11 +101,25 @@ func (node *TreeNode) draw(window *gc.Window, x, y, originX, width, height int, 
 		}
 		window.Move(y, x+expand+1)
 	}
-	line := node.Item.String()
-	if len(line) < width {
-		line += strings.Repeat(" ", width-len(line))
+	lineY, lineX := window.CursorYX()
+	line := node.Item.Value.String()
+	printedLineLength := len(line)
+	if printedLineLength > width {
+		printedLineLength = width
 	}
-	window.Print(line[:width])
+	if cursor == 0 {
+		if click && node.Item.OnClick != nil {
+			go node.Item.OnClick()
+		}
+		window.AttrOn(gc.A_REVERSE)
+	}
+	window.Print(line[:printedLineLength])
+	if cursor == 0 {
+		window.AttrOff(gc.A_REVERSE)
+	}
+	if len(line) < width {
+		window.MovePrint(lineY, lineX+printedLineLength, strings.Repeat(" ", width-printedLineLength))
+	}
 	childrenOffset := 0
 	if child {
 		childrenOffset = expand + 1
@@ -85,7 +131,7 @@ func (node *TreeNode) draw(window *gc.Window, x, y, originX, width, height int, 
 		}
 		window.Move(y+length, x)
 		childLast := idx == len(node.Children)-1
-		childLength := childTree.draw(window, x+childrenOffset, y+length, x, width-childrenOffset-expand-1, height-length, true, childLast, expand)
+		childLength := childTree.draw(window, x+childrenOffset, y+length, x, width-childrenOffset-expand-1, height-length, true, childLast, expand, cursor-length, click)
 		if !childLast {
 			for i := 1; i < childLength; i++ {
 				window.MoveAddChar(y+length+i, x+childrenOffset, gc.ACS_VLINE)
