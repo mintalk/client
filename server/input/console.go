@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"mintalk/server/db"
 	"os"
+	"strings"
 )
 
 type Console struct {
@@ -31,6 +32,7 @@ func (console *Console) Input() error {
 	if err != nil {
 		return err
 	}
+	line = strings.TrimSuffix(line, "\n")
 	return console.Execute(line)
 }
 
@@ -44,10 +46,12 @@ func (console *Console) Execute(rawCommand string) error {
 		return console.op(command[1:])
 	case "deop":
 		return console.deop(command[1:])
-	case "useradd":
-		return console.useradd(command[1:])
-	case "userdel":
-		return console.userdel(command[1:])
+	case "user":
+		return console.user(command[1:])
+	case "group":
+		return console.group(command[1:])
+	case "channel":
+		return console.channel(command[1:])
 	default:
 		return fmt.Errorf("command not found: %s", command[0])
 	}

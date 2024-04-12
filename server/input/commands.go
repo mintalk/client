@@ -38,31 +38,3 @@ func (console *Console) deop(args []string) error {
 	}
 	return err
 }
-
-func (console *Console) useradd(args []string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("user requires 1 argument")
-	}
-	user := db.User{Name: args[0]}
-	err := console.database.Create(&user).Error
-	if err != nil {
-		err = fmt.Errorf("failed to create user: %v", err)
-	}
-	return err
-}
-
-func (console *Console) userdel(args []string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("user requires 1 argument")
-	}
-	user := db.User{Name: args[0]}
-	err := console.database.Where(user).First(&user).Error
-	if err != nil {
-		return fmt.Errorf("failed to find user: %v", err)
-	}
-	err = console.database.Delete(&user).Error
-	if err != nil {
-		err = fmt.Errorf("failed to delete user: %v", err)
-	}
-	return err
-}
