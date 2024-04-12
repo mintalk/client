@@ -69,6 +69,9 @@ func (panel *ChannelsPanel) updateTreeData() {
 		groupsLeft = newGroupsLeft
 	}
 	for cid, channel := range panel.serverCache.Channels {
+		if !panel.channelPanel.ChannelOpened {
+			panel.channelPanel.MoveChannel(cid)
+		}
 		node := elements.NewTreeNode(elements.TreeItem{Value: channel, OnClick: func() {
 			panel.channelPanel.MoveChannel(cid)
 		}})

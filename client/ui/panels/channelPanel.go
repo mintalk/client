@@ -16,6 +16,7 @@ type ChannelPanel struct {
 	serverCache   *cache.ServerCache
 	Connector     *network.Connector
 	ActiveChannel uint
+	ChannelOpened bool
 }
 
 func NewChannelPanel(connector *network.Connector, serverCache *cache.ServerCache) (*ChannelPanel, error) {
@@ -23,7 +24,7 @@ func NewChannelPanel(connector *network.Connector, serverCache *cache.ServerCach
 	if err != nil {
 		return nil, err
 	}
-	channelPanel := &ChannelPanel{Panel: panel, Connector: connector}
+	channelPanel := &ChannelPanel{Panel: panel, Connector: connector, ChannelOpened: false}
 	channelPanel.input = elements.NewInput(1, channelPanel.sendMessage)
 	channelPanel.Add(channelPanel.input)
 	channelPanel.list = elements.NewList(1, 1)
@@ -34,7 +35,7 @@ func NewChannelPanel(connector *network.Connector, serverCache *cache.ServerCach
 }
 
 func (panel *ChannelPanel) Draw(window *gc.Window) error {
-	panel.input.Active = panel.Active
+	panel.input.Active = panel.Active && panel.ChannelOpened
 	err := panel.Panel.Draw(window)
 	if err != nil {
 		return err
@@ -57,6 +58,7 @@ func (panel *ChannelPanel) Resize() {
 }
 
 func (panel *ChannelPanel) MoveChannel(channel uint) {
+	panel.ChannelOpened = true
 	panel.serverCache.GetChannelCache(channel).Listeners = nil
 	panel.ActiveChannel = channel
 	panel.serverCache.GetChannelCache(channel).AddListener(panel.updateListData)
