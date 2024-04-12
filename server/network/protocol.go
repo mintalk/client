@@ -31,10 +31,14 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	response := map[string]interface{}{"authed": authed}
+	response := NetworkData{"authed": authed}
 	if authed {
 		var user *db.User
-		err := executor.Database.Where(&db.User{Name: request["username"].(string)}).First(&user).Error
+		username, ok := request["username"].(string)
+		if !ok {
+			return false, nil
+		}
+		err := executor.Database.Where(&db.User{Name: username}).First(&user).Error
 		if err != nil {
 			return false, err
 		}
@@ -59,11 +63,11 @@ func (executor *ProtocolExecutor) Auth() (bool, error) {
 	return authed, nil
 }
 
-func (executor *ProtocolExecutor) Receive(received chan<- map[string]interface{}) {
+func (executor *ProtocolExecutor) Receive(received chan<- NetworkData) {
 	for {
 		rawData, err := secure.ReceiveAES(executor.Conn, executor.Session)
 		if err != nil {
-			slog.Error("failed to receive data", "err", err)
+			slog.Debug("failed to receive data", "err", err)
 			continue
 		}
 		if rawData == nil || len(rawData) == 0 {
@@ -72,14 +76,14 @@ func (executor *ProtocolExecutor) Receive(received chan<- map[string]interface{}
 		}
 		data, err := Decode(rawData)
 		if err != nil {
-			slog.Error("failed to decode received data", "err", err)
+			slog.Debug("failed to decode received data", "err", err)
 			continue
 		}
 		received <- data
 	}
 }
 
-func (executor *ProtocolExecutor) Send(data <-chan map[string]interface{}) {
+func (executor *ProtocolExecutor) Send(data <-chan NetworkData) {
 	for {
 		sendData, ok := <-data
 		if !ok {
@@ -90,11 +94,11 @@ func (executor *ProtocolExecutor) Send(data <-chan map[string]interface{}) {
 		}
 		rawData, err := Encode(sendData)
 		if err != nil {
-			slog.Error("failed to encode data", "err", err)
+			slog.Debug("failed to encode data", "err", err)
 			continue
 		}
 		if err := secure.SendAES(executor.Conn, rawData, executor.Session); err != nil {
-			slog.Error("failed to send data", "err", err)
+			slog.Debug("failed to send data", "err", err)
 			continue
 		}
 	}

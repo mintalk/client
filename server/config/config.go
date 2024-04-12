@@ -10,6 +10,7 @@ type Config struct {
 	Database        string `yaml:"database"`
 	Host            string `yaml:"host"`
 	SessionLifetime int    `yaml:"session_lifetime"` // in minutes
+	CleanupInterval int    `yaml:"cleanup_interval"` // in minutes
 }
 
 func LoadConfig(path string) (*Config, error) {

@@ -20,7 +20,7 @@ func NewConsole(database *db.Connection) *Console {
 func (console *Console) InputLoop() {
 	for {
 		if err := console.Input(); err != nil {
-			slog.Error("error executing command", "err", err)
+			slog.Warn("error executing command", "err", err)
 		}
 	}
 }

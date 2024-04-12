@@ -6,7 +6,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func ValidateAuthRequest(database *db.Connection, data map[string]interface{}) (bool, error) {
+func ValidateAuthRequest(database *db.Connection, data NetworkData) (bool, error) {
 	var user db.User
 	user.Name = data["username"].(string)
 	err := database.Where(&user).First(&user).Error

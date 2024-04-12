@@ -68,3 +68,20 @@ func (manager *SessionManager) GetSession(sid string) *Session {
 	}
 	return session
 }
+
+func (manager *SessionManager) DeleteSession(sid string) {
+	if _, ok := manager.Sessions[sid]; !ok {
+		return
+	}
+	delete(manager.Sessions, sid)
+}
+
+func (manager *SessionManager) GetSessions() []string {
+	sessions := make([]string, 0, len(manager.Sessions))
+	for sid := range manager.Sessions {
+		if manager.GetSession(sid) != nil {
+			sessions = append(sessions, sid)
+		}
+	}
+	return sessions
+}
