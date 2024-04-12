@@ -33,7 +33,7 @@ func randSessionToken() (string, error) {
 		return "", err
 	}
 
-	token := base64.StdEncoding.EncodeToString(bytes)
+	token := base64.URLEncoding.EncodeToString(bytes)
 
 	return token, nil
 }

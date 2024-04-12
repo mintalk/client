@@ -94,7 +94,7 @@ func Send3Pass(conn net.Conn, message []byte, prime *big.Int) error {
 }
 
 func ReceiveAES(conn net.Conn, key string) ([]byte, error) {
-	keyData, err := base64.StdEncoding.DecodeString(key)
+	keyData, err := base64.URLEncoding.DecodeString(key)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func ReceiveAES(conn net.Conn, key string) ([]byte, error) {
 }
 
 func SendAES(conn net.Conn, data []byte, key string) error {
-	keyData, err := base64.StdEncoding.DecodeString(key)
+	keyData, err := base64.URLEncoding.DecodeString(key)
 	if err != nil {
 		return err
 	}
