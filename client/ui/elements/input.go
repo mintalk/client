@@ -1,7 +1,6 @@
 package elements
 
 import (
-	"strconv"
 	"strings"
 
 	gc "github.com/rthornton128/goncurses"
@@ -18,6 +17,10 @@ type Input struct {
 	Active  bool
 	Handler InputHandler
 	message string
+}
+
+func printableChar(key gc.Key) bool {
+	return key >= 32 && key <= 126
 }
 
 func NewInput(length int, handler InputHandler) *Input {
@@ -50,10 +53,19 @@ func (input *Input) Update(key gc.Key) {
 		input.message = ""
 		input.Cursor = 0
 		input.Offset = 0
-	} else {
-		if !strconv.IsPrint(rune(key)) {
-			return
+	} else if key == gc.KEY_DC {
+		if input.Cursor < len(input.message) {
+			newMessage := input.message[:input.Cursor]
+			if input.Cursor < len(input.message)-1 {
+				newMessage += input.message[input.Cursor+1:]
+			}
+			input.message = newMessage
 		}
+	} else if key == gc.KEY_HOME {
+		input.Cursor = 0
+	} else if key == gc.KEY_END {
+		input.Cursor = len(input.message)
+	} else if printableChar(key) {
 		newMessage := ""
 		if input.Cursor > 0 {
 			newMessage = input.message[:input.Cursor]
