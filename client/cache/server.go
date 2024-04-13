@@ -1,6 +1,9 @@
 package cache
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type ServerGroup struct {
 	Name      string
@@ -9,7 +12,7 @@ type ServerGroup struct {
 }
 
 func (group ServerGroup) String() string {
-	return group.Name
+	return fmt.Sprintf("%s", group.Name)
 }
 
 type ServerChannel struct {

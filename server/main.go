@@ -14,6 +14,11 @@ func main() {
 	}
 
 	app := app.NewApp(config)
+	err = app.ReadArgs()
+	if err != nil {
+		slog.Error("failed to read args", "err", err)
+		return
+	}
 	app.Init()
 	app.Run()
 }

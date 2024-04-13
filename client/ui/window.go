@@ -5,9 +5,6 @@ import (
 	"mintalk/client/cache"
 	"mintalk/client/network"
 	"mintalk/client/ui/panels"
-	"os"
-	"os/signal"
-	"syscall"
 
 	gc "github.com/rthornton128/goncurses"
 )
@@ -48,10 +45,6 @@ func (window *Window) Create(connector *network.Connector, serverCache *cache.Se
 
 	InitColors()
 
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
-	go window.CloseListener(sigc)
-
 	var err error
 	window.channel, err = panels.NewChannelPanel(connector, serverCache)
 	if err != nil {
@@ -74,20 +67,10 @@ func (window *Window) Create(connector *network.Connector, serverCache *cache.Se
 	return nil
 }
 
-func (window *Window) CloseListener(sigc <-chan os.Signal) {
-	for {
-		select {
-		case <-sigc:
-			window.running = false
-			window.Close()
-		}
-	}
-}
-
 func (window *Window) Close() {
+	window.running = false
 	gc.Cursor(1)
 	gc.End()
-	os.Exit(0)
 }
 
 func (window *Window) Run() {

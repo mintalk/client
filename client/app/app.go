@@ -7,6 +7,9 @@ import (
 	"mintalk/client/cache"
 	"mintalk/client/network"
 	"mintalk/client/ui"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type App struct {
@@ -15,6 +18,7 @@ type App struct {
 	Password    string
 	connector   *network.Connector
 	serverCache *cache.ServerCache
+	debug       bool
 }
 
 func NewApp() *App {
@@ -22,11 +26,18 @@ func NewApp() *App {
 }
 
 func (app *App) ReadArgs() error {
-	flag.Parse()
+	flag.Usage = func() {
+		fmt.Println("Usage: [flags] <host> <username> <password>")
+		fmt.Println("Flags:")
+		flag.PrintDefaults()
+	}
+	flag.BoolVar(&app.debug, "d", false, "run in debug mode")
 
+	flag.Parse()
 	args := flag.Args()
 	if len(args) < 3 {
-		return fmt.Errorf("usage: <host> <username> <password>")
+		flag.Usage()
+		return fmt.Errorf("failed to read arguments")
 	}
 	app.Host = args[0]
 	app.Username = args[1]
@@ -35,6 +46,12 @@ func (app *App) ReadArgs() error {
 }
 
 func (app *App) Run() {
+	level := slog.LevelInfo
+	if app.debug {
+		level = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
+
 	var err error
 	app.connector, err = network.NewConnector(app.Host)
 	if err != nil {
@@ -64,6 +81,14 @@ func (app *App) Run() {
 		return
 	}
 
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigc
+		app.connector.Close()
+	}()
+
+	defer app.connector.Close()
 	defer window.Close()
 	window.Run()
 }

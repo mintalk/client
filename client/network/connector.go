@@ -1,7 +1,6 @@
 package network
 
 import (
-	"io"
 	"log/slog"
 	"mintalk/client/cache"
 	"mintalk/client/secure"
@@ -51,13 +50,9 @@ func (connector *Connector) Receive(received chan<- NetworkData) {
 	for {
 		rawData, err := secure.ReceiveAES(connector.conn, connector.session)
 		if err != nil {
-			if err == io.EOF {
-				slog.Info("connection closed")
-				connector.Close()
-				break
-			}
 			slog.Error("failed to receive data", "err", err)
-			continue
+			connector.Close()
+			break
 		}
 		data, err := Decode(rawData)
 		if err != nil {

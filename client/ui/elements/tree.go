@@ -71,11 +71,19 @@ func (tree *Tree) Expand(value int) {
 }
 
 func (tree *Tree) Draw(window *gc.Window) {
-	sort.Slice(tree.Nodes, func(i, j int) bool {
-		return tree.Nodes[i].Item.Value.String() < tree.Nodes[j].Item.Value.String()
+	nodes := make([]*TreeNode, len(tree.Nodes))
+	copy(nodes, tree.Nodes)
+	sort.Slice(nodes, func(i, j int) bool {
+		if nodes[i] == nil || nodes[j] == nil {
+			return true
+		}
+		return nodes[i].Item.Value.String() < nodes[j].Item.Value.String()
 	})
 	offset := 0
-	for _, node := range tree.Nodes {
+	for _, node := range nodes {
+		if node == nil {
+			continue
+		}
 		cursor := tree.Cursor - offset
 		if !tree.Active {
 			cursor = -1

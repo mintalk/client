@@ -47,7 +47,7 @@ func (input *Input) Update(key gc.Key) {
 			input.moveRight()
 		}
 	} else if key == gc.KEY_ENTER || key == gc.KEY_RETURN {
-		if input.Handler != nil {
+		if input.Handler != nil && len(input.message) > 0 {
 			input.Handler(input.message)
 		}
 		input.message = ""

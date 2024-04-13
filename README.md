@@ -4,6 +4,8 @@
 
 ### Running
 
+> Add -h to show the full usage.
+
 ~~~
 cd client
 go run . <host> <username> <password>
@@ -13,6 +15,7 @@ go run . <host> <username> <password>
 ## Server
 
 ### Running
+> Add -h to show the full usage.
 
 ~~~
 cd server
