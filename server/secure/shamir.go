@@ -2,6 +2,7 @@ package secure
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 )
 
@@ -12,6 +13,9 @@ type Key struct {
 }
 
 func KeyFromPrime(prime *big.Int) (Key, error) {
+	if len(prime.Bytes()) == 0 {
+		return Key{}, fmt.Errorf("empty prime")
+	}
 	for {
 		n, err := randomBigInt(len(prime.Bytes()) * 8)
 		if err != nil {

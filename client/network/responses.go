@@ -8,44 +8,25 @@ import (
 
 func (connector *Connector) HandleResponse(data NetworkData) {
 	switch data["action"].(string) {
-	case "message":
-		connector.ResponseMessage(data)
+	case "messages":
+		connector.ResponseMessages(data)
 	case "user":
 		connector.ResponseUser(data)
-	case "fetchmsg":
-		connector.ResponseFetchMessages(data)
-	case "fetchgroup":
-		connector.ResponseFetchGroups(data)
-	case "fetchchannel":
-		connector.ResponseFetchChannels(data)
+	case "users":
+		connector.ResponseUsers(data)
+	case "groups":
+		connector.ResponseGroups(data)
+	case "channels":
+		connector.ResponseChannels(data)
+	case "update":
+		connector.ResponseUpdate(data)
 	}
 }
 
-func (connector *Connector) ResponseMessage(data NetworkData) {
-	rawTime, ok := data["time"].([]byte)
+func (connector *Connector) ResponseMessages(data NetworkData) {
+	messages, ok := data["messages"].([]string)
 	if !ok {
-		slog.Debug("failed to parse time")
-		return
-	}
-	var messageTime time.Time
-	err := messageTime.UnmarshalText(rawTime)
-	if err != nil {
-		slog.Debug("failed to parse time", "err", err)
-		return
-	}
-	uid, ok := data["uid"].(uint)
-	if !ok {
-		slog.Debug("failed to parse uid")
-		return
-	}
-	contents, ok := data["text"].(string)
-	if !ok {
-		slog.Debug("failed to parse contents")
-		return
-	}
-	mid, ok := data["mid"].(uint)
-	if !ok {
-		slog.Debug("failed to parse mid")
+		slog.Debug("failed to parse messages")
 		return
 	}
 	cid, ok := data["cid"].(uint)
@@ -53,34 +34,30 @@ func (connector *Connector) ResponseMessage(data NetworkData) {
 		slog.Debug("failed to parse cid")
 		return
 	}
-	message := cache.Message{
-		Sender:   uid,
-		Contents: contents,
-		Time:     messageTime,
+	lastMid, ok := data["last-mid"].(uint)
+	if !ok {
+		slog.Debug("failed to parse last-mid")
+		return
 	}
-	connector.serverCache.GetChannelCache(cid).AddMessage(mid, message)
-}
+	checkLastMid, ok := data["check-last-mid"].(bool)
+	if !ok {
+		checkLastMid = false
+	}
+	channelCache := connector.serverCache.GetChannelCache(cid)
 
-func (connector *Connector) ResponseUser(data NetworkData) {
-	uid, ok := data["uid"].(uint)
-	if !ok {
-		slog.Debug("failed to parse uid")
-		return
+	if checkLastMid {
+		lastMidFound := false
+		for mid := range channelCache.Messages {
+			if mid == lastMid {
+				lastMidFound = true
+				break
+			}
+		}
+		if !lastMidFound {
+			connector.LoadMessages(0, cid)
+		}
 	}
-	name, ok := data["name"].(string)
-	if !ok {
-		slog.Debug("failed to parse name")
-		return
-	}
-	connector.serverCache.AddUser(uid, name)
-}
 
-func (connector *Connector) ResponseFetchMessages(data NetworkData) {
-	messages, ok := data["messages"].([]string)
-	if !ok {
-		slog.Debug("failed to parse messages")
-		return
-	}
 	for _, messageData := range messages {
 		message, err := Decode([]byte(messageData))
 		if err != nil {
@@ -103,14 +80,9 @@ func (connector *Connector) ResponseFetchMessages(data NetworkData) {
 			slog.Debug("failed to parse uid")
 			continue
 		}
-		contents, ok := message["text"].(string)
+		contents, ok := message["contents"].(string)
 		if !ok {
 			slog.Debug("failed to parse contents")
-			continue
-		}
-		cid, ok := message["cid"].(uint)
-		if !ok {
-			slog.Debug("failed to parse cid")
 			continue
 		}
 		mid, ok := message["mid"].(uint)
@@ -123,11 +95,51 @@ func (connector *Connector) ResponseFetchMessages(data NetworkData) {
 			Contents: contents,
 			Time:     messageTime,
 		}
-		connector.serverCache.GetChannelCache(cid).AddMessage(mid, messageItem)
+		channelCache.AddMessage(mid, messageItem)
 	}
 }
 
-func (connector *Connector) ResponseFetchGroups(data NetworkData) {
+func (connector *Connector) ResponseUser(data NetworkData) {
+	uid, ok := data["uid"].(uint)
+	if !ok {
+		slog.Debug("failed to parse uid")
+		return
+	}
+	name, ok := data["name"].(string)
+	if !ok {
+		slog.Debug("failed to parse name")
+		return
+	}
+	connector.serverCache.AddUser(uid, name)
+}
+
+func (connector *Connector) ResponseUsers(data NetworkData) {
+	users, ok := data["users"].([]string)
+	if !ok {
+		slog.Debug("failed to parse users")
+		return
+	}
+	for _, userData := range users {
+		user, err := Decode([]byte(userData))
+		if err != nil {
+			slog.Debug("failed to decode user", "err", err)
+			continue
+		}
+		uid, ok := user["uid"].(uint)
+		if !ok {
+			slog.Debug("failed to parse uid")
+			continue
+		}
+		name, ok := user["name"].(string)
+		if !ok {
+			slog.Debug("failed to parse name")
+			continue
+		}
+		connector.serverCache.AddUser(uid, name)
+	}
+}
+
+func (connector *Connector) ResponseGroups(data NetworkData) {
 	groups, ok := data["groups"].([]string)
 	if !ok {
 		slog.Debug("failed to parse groups")
@@ -154,9 +166,9 @@ func (connector *Connector) ResponseFetchGroups(data NetworkData) {
 			slog.Debug("failed to parse parent")
 			continue
 		}
-		hasParent, ok := group["hasParent"].(bool)
+		hasParent, ok := group["has-parent"].(bool)
 		if !ok {
-			slog.Debug("failed to parse hasParent")
+			slog.Debug("failed to parse has-parent")
 			continue
 		}
 		connector.serverCache.AddGroup(gid, cache.ServerGroup{
@@ -165,7 +177,7 @@ func (connector *Connector) ResponseFetchGroups(data NetworkData) {
 	}
 }
 
-func (connector *Connector) ResponseFetchChannels(data NetworkData) {
+func (connector *Connector) ResponseChannels(data NetworkData) {
 	channels, ok := data["channels"].([]string)
 	if !ok {
 		slog.Debug("failed to parse channels")
@@ -195,5 +207,28 @@ func (connector *Connector) ResponseFetchChannels(data NetworkData) {
 		connector.serverCache.AddChannel(cid, cache.ServerChannel{
 			Name: name, Group: group,
 		})
+	}
+}
+
+func (connector *Connector) ResponseUpdate(data NetworkData) {
+	updateType, ok := data["type"].(string)
+	if !ok {
+		slog.Debug("failed to parse update type")
+		return
+	}
+	switch updateType {
+	case "message":
+		cid, ok := data["cid"].(uint)
+		if !ok {
+			slog.Debug("failed to parse cid")
+			return
+		}
+		connector.LoadMessages(1, cid)
+	case "user":
+		connector.LoadUsers()
+	case "group":
+		connector.LoadGroups()
+	case "channel":
+		connector.LoadChannels()
 	}
 }

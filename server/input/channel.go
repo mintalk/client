@@ -31,8 +31,7 @@ func (console *Console) channeladd(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find group: %v", err)
 	}
-	channel := db.Channel{Name: args[0], Group: group.ID}
-	err = console.database.Create(&channel).Error
+	err = console.server.CreateChannel(args[0], group)
 	if err != nil {
 		err = fmt.Errorf("failed to create channel: %v", err)
 	}
@@ -48,7 +47,7 @@ func (console *Console) channeldel(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find channel: %v", err)
 	}
-	err = console.database.Delete(&channel).Error
+	err = console.server.RemoveChannel(channel)
 	if err != nil {
 		err = fmt.Errorf("failed to delete channel: %v", err)
 	}
@@ -69,8 +68,7 @@ func (console *Console) channelmove(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find group: %v", err)
 	}
-	channel.Group = group.ID
-	err = console.database.Save(&channel).Error
+	err = console.server.MoveChannel(channel, group)
 	if err != nil {
 		err = fmt.Errorf("failed to save channel: %v", err)
 	}

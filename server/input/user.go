@@ -24,8 +24,7 @@ func (console *Console) useradd(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("user add requires 1 argument")
 	}
-	user := db.User{Name: args[0]}
-	err := console.database.Create(&user).Error
+	err := console.server.CreateUser(args[0])
 	if err != nil {
 		err = fmt.Errorf("failed to create user: %v", err)
 	}
@@ -41,7 +40,7 @@ func (console *Console) userdel(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find user: %v", err)
 	}
-	err = console.database.Delete(&user).Error
+	err = console.server.RemoveUser(user)
 	if err != nil {
 		err = fmt.Errorf("failed to delete user: %v", err)
 	}

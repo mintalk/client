@@ -2,41 +2,37 @@ package secure
 
 import (
 	"encoding/base64"
-	"io"
+	"encoding/binary"
 	"math/big"
 	"net"
 )
 
-func ReadData(conn net.Conn) ([]byte, error) {
-	result := make([]byte, 0)
-	buffer := make([]byte, 1024)
-	for {
-		n, err := conn.Read(buffer)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-		result = append(result, buffer[:n]...)
-		if n < len(buffer) {
-			break
-		}
+func Read(conn net.Conn) ([]byte, error) {
+	var length int64
+	err := binary.Read(conn, binary.BigEndian, &length)
+	if err != nil {
+		return nil, err
 	}
-	return result, nil
+	buffer := make([]byte, length)
+	_, err = conn.Read(buffer)
+	if err != nil {
+		return nil, err
+	}
+	return buffer, nil
 }
 
-func BlockRead(conn net.Conn) ([]byte, error) {
-	for {
-		data, err := ReadData(conn)
-		if err == nil {
-			return data, nil
-		}
+func Write(conn net.Conn, data []byte) error {
+	length := int64(len(data))
+	err := binary.Write(conn, binary.BigEndian, length)
+	if err != nil {
+		return err
 	}
+	_, err = conn.Write(data)
+	return err
 }
 
 func Receive3Pass(conn net.Conn) ([]byte, error) {
-	buffer, err := BlockRead(conn)
+	buffer, err := Read(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -46,19 +42,19 @@ func Receive3Pass(conn net.Conn) ([]byte, error) {
 		return nil, err
 	}
 
-	buffer, err = BlockRead(conn)
+	buffer, err = Read(conn)
 	if err != nil {
 		return nil, err
 	}
 
 	ciphertext := ShamirEncrypt(new(big.Int).SetBytes(buffer), key)
 
-	_, err = conn.Write(ciphertext.Bytes())
+	err = Write(conn, ciphertext.Bytes())
 	if err != nil {
 		return nil, err
 	}
 
-	buffer, err = BlockRead(conn)
+	buffer, err = Read(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +64,7 @@ func Receive3Pass(conn net.Conn) ([]byte, error) {
 }
 
 func Send3Pass(conn net.Conn, message []byte, prime *big.Int) error {
-	_, err := conn.Write(prime.Bytes())
+	err := Write(conn, prime.Bytes())
 	if err != nil {
 		return err
 	}
@@ -78,18 +74,18 @@ func Send3Pass(conn net.Conn, message []byte, prime *big.Int) error {
 	}
 
 	ciphertext := ShamirEncrypt(new(big.Int).SetBytes(message), key)
-	_, err = conn.Write(ciphertext.Bytes())
+	err = Write(conn, ciphertext.Bytes())
 	if err != nil {
 		return err
 	}
 
-	buffer, err := BlockRead(conn)
+	buffer, err := Read(conn)
 	if err != nil {
 		return err
 	}
 
 	message = ShamirDecrypt(new(big.Int).SetBytes(buffer), key).Bytes()
-	_, err = conn.Write(message)
+	err = Write(conn, message)
 	return err
 }
 
@@ -98,7 +94,7 @@ func ReceiveAES(conn net.Conn, key string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	buffer, err := BlockRead(conn)
+	buffer, err := Read(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +110,6 @@ func SendAES(conn net.Conn, data []byte, key string) error {
 	if err != nil {
 		return err
 	}
-	_, err = conn.Write(ciphertext)
+	err = Write(conn, ciphertext)
 	return err
 }

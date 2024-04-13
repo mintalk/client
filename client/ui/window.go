@@ -80,7 +80,6 @@ func (window *Window) CloseListener(sigc <-chan os.Signal) {
 		case <-sigc:
 			window.running = false
 			window.Close()
-			os.Exit(0)
 		}
 	}
 }
@@ -88,6 +87,7 @@ func (window *Window) CloseListener(sigc <-chan os.Signal) {
 func (window *Window) Close() {
 	gc.Cursor(1)
 	gc.End()
+	os.Exit(0)
 }
 
 func (window *Window) Run() {

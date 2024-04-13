@@ -50,18 +50,20 @@ func (app *App) Run() {
 
 	go app.connector.Run(app.serverCache)
 
-	app.connector.LoadChannels()
-
 	window, err := ui.NewWindow()
 	if err != nil {
 		slog.Error("could not create window", "err", err)
 		return
 	}
+
+	app.connector.CloseListener(window.Close)
+
 	err = window.Create(app.connector, app.serverCache)
 	if err != nil {
 		slog.Error("could not create window", "err", err)
 		return
 	}
+
 	defer window.Close()
 	window.Run()
 }

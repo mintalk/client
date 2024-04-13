@@ -41,8 +41,7 @@ func (console *Console) groupadd(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("group add requires 1 argument")
 	}
-	group := db.ChannelGroup{Name: args[0]}
-	err := console.database.Create(&group).Error
+	err := console.server.CreateGroup(args[0])
 	if err != nil {
 		err = fmt.Errorf("failed to create group: %v", err)
 	}
@@ -58,7 +57,7 @@ func (console *Console) groupdel(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find group: %v", err)
 	}
-	err = console.database.Delete(&group).Error
+	err = console.server.RemoveGroup(group)
 	if err != nil {
 		err = fmt.Errorf("failed to delete group: %v", err)
 	}
@@ -79,8 +78,7 @@ func (console *Console) groupmove(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find parent group: %v", err)
 	}
-	group.Parent = parent.ID
-	err = console.database.Save(&group).Error
+	err = console.server.MoveGroup(group, parent)
 	if err != nil {
 		err = fmt.Errorf("failed to save group: %v", err)
 	}
@@ -96,8 +94,7 @@ func (console *Console) grouproot(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find group: %v", err)
 	}
-	group.HasParent = false
-	err = console.database.Save(&group).Error
+	err = console.server.RootGroup(group)
 	if err != nil {
 		err = fmt.Errorf("failed to save group: %v", err)
 	}

@@ -1,6 +1,7 @@
 package network
 
 import (
+	"io"
 	"log/slog"
 	"mintalk/client/cache"
 	"mintalk/client/secure"
@@ -14,6 +15,7 @@ type Connector struct {
 	sender      chan NetworkData
 	receiver    chan NetworkData
 	serverCache *cache.ServerCache
+	closer      func()
 }
 
 func NewConnector(host string) (*Connector, error) {
@@ -49,6 +51,11 @@ func (connector *Connector) Receive(received chan<- NetworkData) {
 	for {
 		rawData, err := secure.ReceiveAES(connector.conn, connector.session)
 		if err != nil {
+			if err == io.EOF {
+				slog.Info("connection closed")
+				connector.Close()
+				break
+			}
 			slog.Error("failed to receive data", "err", err)
 			continue
 		}
@@ -76,6 +83,13 @@ func (connector *Connector) Send(data <-chan NetworkData) {
 	}
 }
 
+func (connector *Connector) CloseListener(closer func()) {
+	connector.closer = closer
+}
+
 func (connector *Connector) Close() {
 	connector.conn.Close()
+	if connector.closer != nil {
+		connector.closer()
+	}
 }

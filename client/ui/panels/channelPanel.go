@@ -54,12 +54,12 @@ func (panel *ChannelPanel) Resize() {
 	panel.input.Move(1, height-2)
 	panel.list.Resize(width-2, height-3)
 	panel.list.Move(1, 1)
-	panel.Connector.LoadMessages(width-2, panel.ActiveChannel)
 }
 
 func (panel *ChannelPanel) MoveChannel(channel uint) {
 	panel.ChannelOpened = true
-	panel.serverCache.GetChannelCache(channel).Listeners = nil
+	panel.Connector.LoadMessages(0, channel)
+	panel.serverCache.GetChannelCache(panel.ActiveChannel).Listeners = nil
 	panel.ActiveChannel = channel
 	panel.serverCache.GetChannelCache(channel).AddListener(panel.updateListData)
 	panel.updateListData()

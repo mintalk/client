@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 	"mintalk/server/db"
+	"mintalk/server/network"
 	"os"
 	"strings"
 )
 
 type Console struct {
 	database *db.Connection
+	server   *network.Server
 }
 
-func NewConsole(database *db.Connection) *Console {
-	return &Console{database}
+func NewConsole(database *db.Connection, server *network.Server) *Console {
+	return &Console{database, server}
 }
 
 func (console *Console) InputLoop() {

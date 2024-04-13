@@ -1,6 +1,7 @@
 package network
 
 import (
+	"io"
 	"log/slog"
 	"mintalk/server/db"
 	"mintalk/server/secure"
@@ -67,6 +68,11 @@ func (executor *ProtocolExecutor) Receive(received chan<- NetworkData) {
 	for {
 		rawData, err := secure.ReceiveAES(executor.Conn, executor.Session)
 		if err != nil {
+			if err == io.EOF {
+				executor.SessionManager.DeleteSession(executor.Session)
+				close(received)
+				return
+			}
 			slog.Debug("failed to receive data", "err", err)
 			continue
 		}

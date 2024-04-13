@@ -3,7 +3,6 @@ package network
 import (
 	"log/slog"
 	"mintalk/server/db"
-	"time"
 )
 
 func (server *Server) HandleRequest(sid string, request NetworkData) {
@@ -12,30 +11,32 @@ func (server *Server) HandleRequest(sid string, request NetworkData) {
 		return
 	}
 	switch action {
-	case "message":
-		server.ActionMessage(sid, request)
-	case "fetchmsg":
-		server.ActionFetchMessages(sid, request)
-	case "fetchgroup":
-		server.ActionFetchGroups(sid, request)
-	case "fetchchannel":
-		server.ActionFetchChannels(sid, request)
+	case "new-message":
+		server.ActionNewMessage(sid, request)
+	case "messages":
+		server.ActionMessages(sid, request)
+	case "groups":
+		server.ActionGroups(sid, request)
+	case "channels":
+		server.ActionChannels(sid, request)
 	case "user":
 		server.ActionUser(sid, request)
+	case "users":
+		server.ActionUsers(sid, request)
 	}
 }
 
-func (server *Server) ActionMessage(sid string, data NetworkData) {
+func (server *Server) ActionNewMessage(sid string, data NetworkData) {
 	session := server.sessionManager.GetSession(sid)
 	if session == nil {
 		return
 	}
-	text, ok := data["text"].(string)
+	contents, ok := data["contents"].(string)
 	if !ok {
-		slog.Debug("failed to fetch message text", "err", "no text")
+		slog.Debug("failed to fetch message contents", "err", "no contents")
 		return
 	}
-	if len(text) == 0 {
+	if len(contents) == 0 {
 		slog.Debug("failed to create message text", "err", "empty text")
 		return
 	}
@@ -44,43 +45,26 @@ func (server *Server) ActionMessage(sid string, data NetworkData) {
 		slog.Debug("failed to fetch message channel", "err", "no channel")
 		return
 	}
-	message := &db.Message{
-		UID:     session.User.ID,
-		Text:    text,
-		Channel: cid,
-		Time:    time.Now(),
-	}
-	server.database.Create(message)
-	messageTime, err := message.Time.MarshalText()
-	if err != nil {
-		slog.Debug("failed to marshal message time", "err", err)
+	if err := server.CreateMessage(session.User.ID, cid, contents); err != nil {
+		slog.Debug("failed to create message", "err", err)
 		return
 	}
-	broadcast := NetworkData{
-		"action": "message",
-		"mid":    message.ID,
-		"text":   message.Text,
-		"uid":    session.User.ID,
-		"cid":    message.Channel,
-		"time":   messageTime,
-	}
-	server.Broadcast(broadcast)
 }
 
-func (server *Server) ActionFetchMessages(sid string, data NetworkData) {
+func (server *Server) ActionMessages(sid string, data NetworkData) {
 	limit, ok := data["limit"].(int)
 	if !ok {
 		limit = 0
 	}
-	channel, ok := data["cid"].(uint)
+	cid, ok := data["cid"].(uint)
 	if !ok {
 		slog.Debug("failed to fetch messages", "err", "no channel")
 		return
 	}
 	var messages []db.Message
-	query := server.database.Where(&db.Message{Channel: channel}).Order("time desc")
+	query := server.database.Where(&db.Message{Channel: cid}).Order("time desc")
 	if limit > 0 {
-		query = query.Limit(limit)
+		query = query.Limit(limit + 1)
 	}
 	err := query.Find(&messages).Error
 	if err != nil {
@@ -89,17 +73,19 @@ func (server *Server) ActionFetchMessages(sid string, data NetworkData) {
 	}
 	responseMessages := make([]string, len(messages))
 	for i, message := range messages {
+		if i == 0 && limit > 0 {
+			continue
+		}
 		messageTime, err := message.Time.MarshalText()
 		if err != nil {
 			slog.Debug("failed to marshal message time", "err", err)
 			return
 		}
 		messageData := NetworkData{
-			"mid":  message.ID,
-			"uid":  message.UID,
-			"cid":  message.Channel,
-			"text": message.Text,
-			"time": messageTime,
+			"mid":      message.ID,
+			"uid":      message.UID,
+			"contents": message.Contents,
+			"time":     messageTime,
 		}
 		rawMessageData, err := Encode(messageData)
 		if err != nil {
@@ -108,14 +94,21 @@ func (server *Server) ActionFetchMessages(sid string, data NetworkData) {
 		}
 		responseMessages[i] = string(rawMessageData)
 	}
+	lastMid := uint(0)
+	if len(messages) > 0 {
+		lastMid = messages[0].ID
+	}
 	response := NetworkData{
-		"action":   "fetchmsg",
-		"messages": responseMessages,
+		"action":         "messages",
+		"messages":       responseMessages,
+		"cid":            cid,
+		"last-mid":       lastMid,
+		"check-last-mid": len(messages) > limit,
 	}
 	server.senders[sid] <- response
 }
 
-func (server *Server) ActionFetchGroups(sid string, data NetworkData) {
+func (server *Server) ActionGroups(sid string, data NetworkData) {
 	var groups []db.ChannelGroup
 	err := server.database.Find(&groups).Error
 	if err != nil {
@@ -125,10 +118,10 @@ func (server *Server) ActionFetchGroups(sid string, data NetworkData) {
 	responseGroups := make([]string, len(groups))
 	for i, group := range groups {
 		groupData := NetworkData{
-			"gid":       group.ID,
-			"name":      group.Name,
-			"parent":    group.Parent,
-			"hasParent": group.HasParent,
+			"gid":        group.ID,
+			"name":       group.Name,
+			"parent":     group.Parent,
+			"has-parent": group.HasParent,
 		}
 		rawGroupData, err := Encode(groupData)
 		if err != nil {
@@ -138,13 +131,13 @@ func (server *Server) ActionFetchGroups(sid string, data NetworkData) {
 		responseGroups[i] = string(rawGroupData)
 	}
 	response := NetworkData{
-		"action": "fetchgroup",
+		"action": "groups",
 		"groups": responseGroups,
 	}
 	server.senders[sid] <- response
 }
 
-func (server *Server) ActionFetchChannels(sid string, data NetworkData) {
+func (server *Server) ActionChannels(sid string, data NetworkData) {
 	var channels []db.Channel
 	err := server.database.Find(&channels).Error
 	if err != nil {
@@ -166,7 +159,7 @@ func (server *Server) ActionFetchChannels(sid string, data NetworkData) {
 		responseChannels[i] = string(rawChannelData)
 	}
 	response := NetworkData{
-		"action":   "fetchchannel",
+		"action":   "channels",
 		"channels": responseChannels,
 	}
 	server.senders[sid] <- response
@@ -187,6 +180,33 @@ func (server *Server) ActionUser(sid string, data NetworkData) {
 		"action": "user",
 		"uid":    user.ID,
 		"name":   user.Name,
+	}
+	server.senders[sid] <- response
+}
+
+func (server *Server) ActionUsers(sid string, data NetworkData) {
+	var users []db.User
+	err := server.database.Find(&users).Error
+	if err != nil {
+		slog.Debug("failed to fetch users", "err", err)
+		return
+	}
+	responseUsers := make([]string, len(users))
+	for i, user := range users {
+		userData := NetworkData{
+			"uid":  user.ID,
+			"name": user.Name,
+		}
+		rawUserData, err := Encode(userData)
+		if err != nil {
+			slog.Debug("failed to encode user data", "err", err)
+			return
+		}
+		responseUsers[i] = string(rawUserData)
+	}
+	response := NetworkData{
+		"action": "users",
+		"users":  responseUsers,
 	}
 	server.senders[sid] <- response
 }

@@ -9,7 +9,7 @@ func (connector *Connector) LoadUser(uid uint) {
 
 func (connector *Connector) LoadMessages(limit int, channel uint) {
 	connector.sender <- NetworkData{
-		"action": "fetchmsg",
+		"action": "messages",
 		"limit":  limit,
 		"cid":    channel,
 	}
@@ -17,20 +17,26 @@ func (connector *Connector) LoadMessages(limit int, channel uint) {
 
 func (connector *Connector) LoadGroups() {
 	connector.sender <- NetworkData{
-		"action": "fetchgroup",
+		"action": "groups",
 	}
 }
 
 func (connector *Connector) LoadChannels() {
 	connector.sender <- NetworkData{
-		"action": "fetchchannel",
+		"action": "channels",
 	}
 }
 
-func (connector *Connector) SendMessage(text string, channel uint) {
+func (connector *Connector) LoadUsers() {
 	connector.sender <- NetworkData{
-		"action": "message",
-		"text":   text,
-		"cid":    channel,
+		"action": "users",
+	}
+}
+
+func (connector *Connector) SendMessage(contents string, channel uint) {
+	connector.sender <- NetworkData{
+		"action":   "new-message",
+		"contents": contents,
+		"cid":      channel,
 	}
 }

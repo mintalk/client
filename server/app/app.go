@@ -30,7 +30,7 @@ func (app *App) Init() error {
 		return err
 	}
 	app.server = network.NewServer(app.database, app.config)
-	app.console = input.NewConsole(app.database)
+	app.console = input.NewConsole(app.database, app.server)
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"mintalk/client/secure"
 )
 
@@ -40,5 +41,5 @@ func (connector *Connector) ReceiveAuth() (string, error) {
 	if data["authed"].(bool) {
 		return data["session"].(string), nil
 	}
-	return "", nil
+	return "", fmt.Errorf("authentication failed")
 }
