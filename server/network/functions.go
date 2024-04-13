@@ -101,7 +101,7 @@ func (server *Server) RemoveGroup(group db.ChannelGroup) error {
 
 func (server *Server) CreateUser(name string) error {
 	defer server.SendUpdate("user")
-	user := db.User{Name: name}
+	user := db.User{Name: name, Password: ""}
 	return server.database.Create(&user).Error
 }
 
