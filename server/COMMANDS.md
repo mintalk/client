@@ -1,20 +1,4 @@
 # List of server commands
-
-## Role system
-> **Note**: This is currently not fully implemented.
-
-~~~
-op <user>
-~~~
-
-Make user an operator.
-
-~~~
-deop <user>
-~~~
-
-Make user not an operator.
-
 ## User management
 
 ~~~
@@ -22,6 +6,19 @@ user add <name>
 ~~~
 
 Create a new user. When he first logs in, a password will be created.
+
+~~~
+user op <user>
+~~~
+
+Make user an operator.
+
+~~~
+user deop <user>
+~~~
+
+Make user not an operator.
+> **Note**: Operators are currently not implemented.
 
 ~~~
 user del <name>

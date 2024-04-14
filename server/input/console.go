@@ -44,10 +44,6 @@ func (console *Console) Execute(rawCommand string) error {
 		return nil
 	}
 	switch command[0] {
-	case "op":
-		return console.op(command[1:])
-	case "deop":
-		return console.deop(command[1:])
 	case "user":
 		return console.user(command[1:])
 	case "group":

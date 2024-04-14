@@ -103,9 +103,36 @@ func (server *Server) DeleteSender(sid string) {
 }
 
 func (server *Server) Cleanup() {
+	slog.Debug("cleaning up")
 	for sid, sender := range server.senders {
 		if server.sessionManager.GetSession(sid) == nil || sender == nil {
 			server.DeleteSender(sid)
+		}
+	}
+	var messages []db.Message
+	err := server.database.Find(&messages).Error
+	if err != nil {
+		slog.Debug("failed to clean messages", "err", err)
+	}
+	for _, message := range messages {
+		var channels []db.Channel
+		err := server.database.Find(&channels).Error
+		if err != nil {
+			slog.Debug("failed to find channels", "err", err)
+			continue
+		}
+		channelFound := false
+		for _, channel := range channels {
+			if channel.ID == message.Channel {
+				channelFound = true
+				break
+			}
+		}
+		if !channelFound {
+			err := server.database.Delete(&message).Error
+			if err != nil {
+				slog.Debug("failed to delete message", "err", err)
+			}
 		}
 	}
 }

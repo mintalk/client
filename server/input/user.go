@@ -12,6 +12,10 @@ func (console *Console) user(args []string) error {
 	switch args[0] {
 	case "add":
 		return console.useradd(args[1:])
+	case "op":
+		return console.userop(args[1:])
+	case "deop":
+		return console.userdeop(args[1:])
 	case "del":
 		return console.userdel(args[1:])
 	case "list":
@@ -27,6 +31,40 @@ func (console *Console) useradd(args []string) error {
 	err := console.server.CreateUser(args[0])
 	if err != nil {
 		err = fmt.Errorf("failed to create user: %v", err)
+	}
+	return err
+}
+
+func (console *Console) userop(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("user op requires 1 argument")
+	}
+	user := db.User{Name: args[0]}
+	err := console.database.Where(user).First(&user).Error
+	if err != nil {
+		return fmt.Errorf("failed to find user: %v", err)
+	}
+	user.Operator = true
+	err = console.database.Save(&user).Error
+	if err != nil {
+		err = fmt.Errorf("failed to save user: %v", err)
+	}
+	return err
+}
+
+func (console *Console) userdeop(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("user deop requires 1 argument")
+	}
+	user := db.User{Name: args[0]}
+	err := console.database.Where(user).First(&user).Error
+	if err != nil {
+		return fmt.Errorf("failed to find user: %v", err)
+	}
+	user.Operator = false
+	err = console.database.Save(&user).Error
+	if err != nil {
+		err = fmt.Errorf("failed to save user: %v", err)
 	}
 	return err
 }
