@@ -3,7 +3,7 @@ package elements
 import (
 	"strings"
 
-	gc "github.com/rthornton128/goncurses"
+	gc "github.com/mintalk/goncurses"
 )
 
 type InputHandler func(string)

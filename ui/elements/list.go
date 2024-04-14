@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	gc "github.com/rthornton128/goncurses"
+	gc "github.com/mintalk/goncurses"
 )
 
 type List struct {

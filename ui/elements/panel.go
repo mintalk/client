@@ -1,7 +1,7 @@
 package elements
 
 import (
-	gc "github.com/rthornton128/goncurses"
+	gc "github.com/mintalk/goncurses"
 )
 
 type Panel struct {

@@ -1,6 +1,6 @@
 package ui
 
-import gc "github.com/rthornton128/goncurses"
+import gc "github.com/mintalk/goncurses"
 
 func InitColors() {
 	gc.StartColor()

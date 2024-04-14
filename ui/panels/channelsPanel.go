@@ -1,7 +1,7 @@
 package panels
 
 import (
-	gc "github.com/rthornton128/goncurses"
+	gc "github.com/mintalk/goncurses"
 	"mintalk/client/cache"
 	"mintalk/client/network"
 	"mintalk/client/ui/elements"

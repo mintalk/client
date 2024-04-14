@@ -6,7 +6,7 @@ import (
 	"mintalk/client/network"
 	"mintalk/client/ui/elements"
 
-	gc "github.com/rthornton128/goncurses"
+	gc "github.com/mintalk/goncurses"
 )
 
 type ChannelPanel struct {
