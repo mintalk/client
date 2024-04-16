@@ -2,6 +2,7 @@ package elements
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	gc "github.com/mintalk/goncurses"
 )
@@ -16,107 +17,115 @@ type Input struct {
 	Offset  int
 	Active  bool
 	Handler InputHandler
-	message string
-}
-
-func printableChar(key gc.Key) bool {
-	return key >= 32 && key <= 126
+	message []byte
 }
 
 func NewInput(length int, handler InputHandler) *Input {
-	return &Input{length, 0, 0, 0, 0, false, handler, ""}
+	return &Input{length, 0, 0, 0, 0, false, handler, []byte{}}
 }
 
 func (input *Input) Update(key gc.Key) {
 	if !input.Active {
 		return
 	}
+	if key == 0 {
+		return
+	}
 	if key == gc.KEY_BACKSPACE {
+		input.Cursor = input.StartCursor()
 		if input.Cursor > 0 {
-			input.moveLeft(true)
-			newMessage := input.message[:input.Cursor]
-			if input.Cursor < len(input.message) {
-				newMessage += input.message[input.Cursor+1:]
-			}
-			input.message = newMessage
+			begin := input.Cursor
+			input.Cursor--
+			input.Cursor = input.StartCursor()
+			end := input.Cursor
+			input.message = append(input.message[:end], input.message[begin:]...)
 		}
 	} else if key == gc.KEY_LEFT {
-		input.moveLeft(false)
+		if input.StartCursor() > 0 {
+			originalCursor := input.StartCursor()
+			for input.StartCursor() == originalCursor {
+				input.Cursor--
+			}
+			input.Cursor = input.StartCursor()
+		}
 	} else if key == gc.KEY_RIGHT {
 		if input.Cursor < len(input.message) {
-			input.moveRight()
+			originalCursor := input.StartCursor()
+			for input.StartCursor() == originalCursor {
+				input.Cursor++
+			}
 		}
 	} else if key == gc.KEY_ENTER || key == gc.KEY_RETURN {
-		if input.Handler != nil && len(input.message) > 0 {
-			input.Handler(input.message)
-		}
-		input.message = ""
+		input.Handler(string(input.message))
 		input.Cursor = 0
-		input.Offset = 0
+		input.message = []byte{}
 	} else if key == gc.KEY_DC {
-		if input.Cursor < len(input.message) {
-			newMessage := input.message[:input.Cursor]
-			if input.Cursor < len(input.message)-1 {
-				newMessage += input.message[input.Cursor+1:]
+		input.Cursor = input.StartCursor()
+		if input.RuneCursor() < input.RuneLength() {
+			end := input.Cursor
+			for input.StartCursor() == end {
+				input.Cursor++
 			}
-			input.message = newMessage
+			begin := input.Cursor
+			input.message = append(input.message[:end], input.message[begin:]...)
+			input.Cursor = end
 		}
 	} else if key == gc.KEY_HOME {
-		input.Cursor = 0
 	} else if key == gc.KEY_END {
-		input.Cursor = len(input.message)
-	} else if printableChar(key) {
-		newMessage := ""
-		if input.Cursor > 0 {
-			newMessage = input.message[:input.Cursor]
+	} else {
+		input.Cursor = input.StartCursor()
+		runeKey := rune(key)
+		if utf8.ValidRune(runeKey) && input.RuneLength() < input.Length {
+			begin := input.Cursor
+			input.message = append(input.message[:begin], append([]byte{byte(key)}, input.message[begin:]...)...)
+			input.Cursor++
 		}
-		newMessage += string(rune(key))
-		if input.Cursor < len(input.message) {
-			newMessage += input.message[input.Cursor:]
-		}
-		input.message = newMessage
-		input.moveRight()
 	}
 }
 
-func (input *Input) moveLeft(scroll bool) {
-	if input.Cursor <= 0 {
-		return
+func (input *Input) RuneCursor() int {
+	if len(input.message) == 0 {
+		return 0
 	}
-	input.Cursor--
-	if scroll && input.Offset > 0 {
-		input.Offset--
-	}
-	if input.Cursor-input.Offset < 0 {
-		input.Offset = input.Cursor
-	}
-}
-
-func (input *Input) moveRight() {
 	if input.Cursor >= len(input.message) {
-		return
+		return input.RuneLength()
 	}
-	input.Cursor++
-	if input.Cursor-input.Offset >= input.Length {
-		input.Offset++
+	return utf8.RuneCount(input.message[:input.StartCursor()])
+}
+
+func (input *Input) RuneLength() int {
+	return utf8.RuneCount(input.message)
+}
+
+func (input *Input) StartCursor() int {
+	if len(input.message) == 0 {
+		return 0
 	}
+	if input.Cursor >= len(input.message) {
+		return len(input.message)
+	}
+	startCursor := input.Cursor
+	for !utf8.RuneStart(input.message[startCursor]) {
+		startCursor--
+	}
+	return startCursor
 }
 
 func (input *Input) Draw(window *gc.Window) {
-	printedMessage := input.message[input.Offset:]
-	if len(printedMessage) < input.Length {
-		printedMessage += strings.Repeat(" ", input.Length-len(printedMessage))
+	if !input.Active {
+		return
 	}
-	realCursor := input.Cursor - input.Offset
-	printedMessage = printedMessage[:input.Length]
-	window.MovePrint(input.Y, input.X, printedMessage)
-	if input.Active {
-		window.AttrOn(gc.A_REVERSE)
+	window.MovePrint(input.Y, input.X, strings.Repeat(" ", input.Length))
+	window.MovePrint(input.Y, input.X, string(input.message))
+	window.AttrOn(gc.A_REVERSE)
+	startCursor := input.StartCursor()
+	cursorRune := rune(' ')
+	if startCursor < len(input.message) {
+		cursorRune, _ = utf8.DecodeRune(input.message[startCursor:])
 	}
-	window.MoveAddChar(input.Y, input.X+realCursor, gc.Char(printedMessage[realCursor]))
-	if input.Active {
-		window.AttrOff(gc.A_REVERSE)
-	}
+	window.MovePrint(input.Y, input.X+input.RuneCursor(), string(cursorRune))
+	window.AttrOff(gc.A_REVERSE)
+	window.Refresh()
 }
 
 func (input *Input) Move(x, y int) {

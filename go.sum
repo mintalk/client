@@ -1,2 +1,10 @@
 github.com/mintalk/goncurses v0.0.0-20240414135233-47b69adca821 h1:pdohHtdp2xqanr9U9DmVA34Uw8VkMShhugfd25H+DL8=
 github.com/mintalk/goncurses v0.0.0-20240414135233-47b69adca821/go.mod h1:NV05rGJiY8vwLaNM03Te6ZHewCpEaFIQ8ZFBxtOaGHk=
+github.com/mintalk/goncurses v0.0.0-20240414141148-0a8c109b2d59 h1:bCcUgjWxDM/cAQFgHl9h5puUT1LLiKRZ9prNgt+rdF0=
+github.com/mintalk/goncurses v0.0.0-20240414141148-0a8c109b2d59/go.mod h1:NV05rGJiY8vwLaNM03Te6ZHewCpEaFIQ8ZFBxtOaGHk=
+github.com/mintalk/goncurses v0.0.0-20240414143541-f7532ecc3c33 h1:AIwmDDV+H7VUkXN3GuA5U5P8wtFgWHyPvWA0tppUS7I=
+github.com/mintalk/goncurses v0.0.0-20240414143541-f7532ecc3c33/go.mod h1:NV05rGJiY8vwLaNM03Te6ZHewCpEaFIQ8ZFBxtOaGHk=
+github.com/mintalk/goncurses v0.0.0-20240415165529-e8538f95c418 h1:K3KXuFfWzE3Hn4LoOSgjDjaQGdAEc7Gx4+9d6g43rkk=
+github.com/mintalk/goncurses v0.0.0-20240415165529-e8538f95c418/go.mod h1:NV05rGJiY8vwLaNM03Te6ZHewCpEaFIQ8ZFBxtOaGHk=
+github.com/mintalk/goncurses v0.0.0-20240415171701-9f6006698496 h1:U7qFwjaISXTlGZVtsxYCCoCnVS//RdzYnN67tR4XZDU=
+github.com/mintalk/goncurses v0.0.0-20240415171701-9f6006698496/go.mod h1:NV05rGJiY8vwLaNM03Te6ZHewCpEaFIQ8ZFBxtOaGHk=

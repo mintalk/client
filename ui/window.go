@@ -19,19 +19,11 @@ type Window struct {
 }
 
 func NewWindow() (*Window, error) {
-	ncursesWindow, err := gc.Init()
+	stdscr, err := gc.Init()
 	if err != nil {
 		return nil, err
 	}
-	err = gc.StartColor()
-	if err != nil {
-		return nil, err
-	}
-	err = gc.InitPair(1, gc.C_CYAN, 0)
-	if err != nil {
-		return nil, err
-	}
-	window := &Window{ncursesWindow, nil, nil, nil, NewUIState(), false}
+	window := &Window{stdscr, nil, nil, nil, NewUIState(), false}
 	window.State.ActiveTab = TabChannel
 	return window, nil
 }
