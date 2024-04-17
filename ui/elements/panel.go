@@ -33,9 +33,9 @@ func (panel *Panel) Draw(window *gc.Window) error {
 		color = 1
 	}
 	panel.Window().ColorOn(color)
-	if err := panel.Window().Box(0, 0); err != nil {
+	/*if err := panel.Window().Box(0, 0); err != nil {
 		return err
-	}
+	}*/
 
 	for _, component := range panel.Components {
 		component.Draw(panel.Window())

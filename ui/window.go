@@ -89,6 +89,7 @@ func (window *Window) Update() {
 		} else {
 			window.State.ActiveTab = TabChannels
 		}
+		return
 	} else if char == gc.KEY_RESIZE {
 		window.Resize(window.MaxYX())
 	}
@@ -112,6 +113,7 @@ func (window *Window) Draw() error {
 		return err
 	}
 
+	window.Refresh()
 	return nil
 }
 
