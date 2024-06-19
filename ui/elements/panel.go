@@ -21,7 +21,6 @@ func NewPanel(width, height int) (*Panel, error) {
 	if err != nil {
 		return nil, err
 	}
-	window.Box(0, 0)
 	panel := gc.NewPanel(window)
 	components := make([]Element, 0)
 	return &Panel{panel, width, height, 0, 0, false, components}, nil
@@ -33,13 +32,11 @@ func (panel *Panel) Draw(window *gc.Window) error {
 		color = 1
 	}
 	panel.Window().ColorOn(color)
-	/*if err := panel.Window().Box(0, 0); err != nil {
-		return err
-	}*/
-
 	for _, component := range panel.Components {
 		component.Draw(panel.Window())
 	}
+
+	panel.Window().Box(0, 0)
 
 	return nil
 }
