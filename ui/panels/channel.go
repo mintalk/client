@@ -54,6 +54,8 @@ func (channel *Channel) MoveChannel(channelId uint) {
 	channel.ActiveChannel = channelId
 	channel.serverCache.GetChannelCache(channelId).AddListener(channel.updateListData)
 	channel.Connector.LoadMessages(0, channelId)
+	channelName := channel.serverCache.Channels[channelId].Name
+	channel.SetTitle(channelName)
 }
 
 func (channel *Channel) sendMessage(message string) {
