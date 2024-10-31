@@ -33,7 +33,13 @@ func NewChannelCache() *ChannelCache {
 }
 
 func (cache *ChannelCache) AddMessage(mid uint, message Message) {
-	cache.Messages[mid] = message
+	cache.AddMessages(map[uint]Message{mid: message})
+}
+
+func (cache *ChannelCache) AddMessages(messages map[uint]Message) {
+	for mid, message := range messages {
+		cache.Messages[mid] = message
+	}
 	for _, listener := range cache.Listeners {
 		listener()
 	}
