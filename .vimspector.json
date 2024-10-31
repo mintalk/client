@@ -1,0 +1,20 @@
+{
+  "configurations": {
+    "Run": {
+      "adapter": "delve",
+      "configuration": {
+        "request": "launch",
+        "program": "${workspaceRoot}", 
+        "mode": "debug",
+				"args": ["127.0.0.1:8000", "aino", "2207"],
+        "dlvToolPath": "dlv"
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N/A",
+          "uncaught": "N/A"
+        }
+      }
+    }
+  }
+}

@@ -5,6 +5,7 @@ import (
 	"mintalk/client/cache"
 	"mintalk/client/secure"
 	"net"
+	"time"
 )
 
 type Connector struct {
@@ -14,11 +15,13 @@ type Connector struct {
 	sender      chan NetworkData
 	receiver    chan NetworkData
 	serverCache *cache.ServerCache
+	lastRequests map[string]time.Time
+	requestWait time.Duration
 	closer      func()
 }
 
 func NewConnector(host string) (*Connector, error) {
-	connector := &Connector{Host: host}
+	connector := &Connector{Host: host, requestWait: 1 * time.Second, lastRequests: make(map[string]time.Time)}
 	var err error
 	connector.conn, err = net.Dial("tcp", host)
 	if err != nil {
@@ -40,6 +43,7 @@ func (connector *Connector) Start(username, password string) error {
 
 func (connector *Connector) Run(serverCache *cache.ServerCache) {
 	connector.serverCache = serverCache
+	connector.serverCache.Hostname = connector.Host
 	for {
 		data := <-connector.receiver
 		connector.HandleResponse(data)
@@ -71,11 +75,25 @@ func (connector *Connector) Send(data <-chan NetworkData) {
 			slog.Error("failed to encode data", "err", err)
 			continue
 		}
+		if !connector.checkSend(rawData) {
+			continue
+		}
 		if err := secure.SendAES(connector.conn, rawData, connector.session); err != nil {
 			slog.Error("failed to send data", "err", err)
 			continue
 		}
 	}
+}
+
+func (connector *Connector) checkSend(data []byte) bool {
+	currentTime := time.Now()
+	key := string(data)
+	lastTime, ok := connector.lastRequests[key]
+	canSend := !ok || currentTime.Sub(lastTime) > connector.requestWait
+	if canSend {
+		connector.lastRequests[key] = currentTime
+	}
+	return canSend
 }
 
 func (connector *Connector) CloseListener(closer func()) {

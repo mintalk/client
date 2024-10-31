@@ -58,6 +58,7 @@ func (connector *Connector) ResponseMessages(data NetworkData) {
 		}
 	}
 
+	messageMap := make(map[uint]cache.Message)
 	for _, messageData := range messages {
 		message, err := Decode([]byte(messageData))
 		if err != nil {
@@ -94,9 +95,11 @@ func (connector *Connector) ResponseMessages(data NetworkData) {
 			Sender:   uid,
 			Contents: contents,
 			Time:     messageTime,
+			Username: "",
 		}
-		channelCache.AddMessage(mid, messageItem)
+		messageMap[mid] = messageItem
 	}
+	channelCache.AddMessages(messageMap)
 }
 
 func (connector *Connector) ResponseUser(data NetworkData) {
@@ -119,6 +122,7 @@ func (connector *Connector) ResponseUsers(data NetworkData) {
 		slog.Debug("failed to parse users")
 		return
 	}
+	userMap := make(map[uint]string)
 	for _, userData := range users {
 		user, err := Decode([]byte(userData))
 		if err != nil {
@@ -135,8 +139,9 @@ func (connector *Connector) ResponseUsers(data NetworkData) {
 			slog.Debug("failed to parse name")
 			continue
 		}
-		connector.serverCache.AddUser(uid, name)
+		userMap[uid] = name
 	}
+	connector.serverCache.AddUsers(userMap)
 }
 
 func (connector *Connector) ResponseGroups(data NetworkData) {
@@ -145,6 +150,7 @@ func (connector *Connector) ResponseGroups(data NetworkData) {
 		slog.Debug("failed to parse groups")
 		return
 	}
+	groupMap := make(map[uint]cache.ServerGroup)
 	for _, groupData := range groups {
 		group, err := Decode([]byte(groupData))
 		if err != nil {
@@ -171,10 +177,11 @@ func (connector *Connector) ResponseGroups(data NetworkData) {
 			slog.Debug("failed to parse has-parent")
 			continue
 		}
-		connector.serverCache.AddGroup(gid, cache.ServerGroup{
+		groupMap[gid] = cache.ServerGroup{
 			Name: name, Parent: parent, HasParent: hasParent,
-		})
+		}
 	}
+	connector.serverCache.AddGroups(groupMap)
 }
 
 func (connector *Connector) ResponseChannels(data NetworkData) {

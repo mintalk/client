@@ -67,28 +67,20 @@ func (app *App) Run() {
 
 	go app.connector.Run(app.serverCache)
 
-	window, err := ui.NewWindow()
-	if err != nil {
-		slog.Error("could not create window", "err", err)
-		return
-	}
+	window := ui.NewWindow()
 
-	app.connector.CloseListener(window.Close)
+	app.connector.CloseListener(window.Stop)
+
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigc
+		window.Stop()
+	}()
 
 	err = window.Create(app.connector, app.serverCache)
 	if err != nil {
 		slog.Error("could not create window", "err", err)
 		return
 	}
-
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigc
-		app.connector.Close()
-	}()
-
-	defer app.connector.Close()
-	defer window.Close()
-	window.Run()
 }

@@ -49,21 +49,39 @@ func (cache *ServerCache) AddListener(listener func()) {
 }
 
 func (cache *ServerCache) AddUser(uid uint, username string) {
-	cache.Users[uid] = username
+	cache.AddUsers(map[uint]string{uid: username})
+}
+
+func (cache *ServerCache) AddUsers(users map[uint]string) {
+	for uid, username := range users {
+		cache.Users[uid] = username
+	}
 	for _, listener := range cache.Listeners {
 		listener()
 	}
 }
 
 func (cache *ServerCache) AddGroup(gid uint, group ServerGroup) {
-	cache.Groups[gid] = group
+	cache.AddGroups(map[uint]ServerGroup{gid: group})
+}
+
+func (cache *ServerCache) AddGroups(groups map[uint]ServerGroup) {
+	for gid, group := range groups {
+		cache.Groups[gid] = group
+	}
 	for _, listener := range cache.Listeners {
 		listener()
 	}
 }
 
 func (cache *ServerCache) AddChannel(cid uint, channel ServerChannel) {
-	cache.Channels[cid] = channel
+	cache.AddChannels(map[uint]ServerChannel{cid: channel})
+}
+
+func (cache *ServerCache) AddChannels(channels map[uint]ServerChannel) {
+	for cid, channel := range channels {
+		cache.Channels[cid] = channel
+	}
 	for _, listener := range cache.Listeners {
 		listener()
 	}
