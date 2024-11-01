@@ -26,6 +26,7 @@ func NewChannels(app *tview.Application, connector *network.Connector, channel *
 		app: app,
 	}
 	channels.SetBorder(true)
+	channels.SetTitle("Channels")
 	channels.SetRoot(channels.root)
 	
 	channels.serverCache.AddListener(channels.updateTreeData)
